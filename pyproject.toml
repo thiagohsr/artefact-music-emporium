@@ -1,0 +1,11 @@
+[project]
+name = "artefact-music-emporium"
+version = "0.1.0"
+description = "Text-message customer service agent prototype for Empório da Música, a fictional musical instrument store."
+requires-python = ">=3.13"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "specify-cli==1.2.5",
+]
