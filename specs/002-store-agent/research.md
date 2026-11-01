@@ -77,8 +77,12 @@ history of the run it's part of, so returning a transcript is the direct way to 
 **System user ID**: A random ID in a table that maps it to `customer_id`, in the same database.
 
 **Limitation**: This is pseudonymization, not anonymization, because whoever has the database file can follow the
-mapping. The alternative, a keyed hash, needs one more secret to configure and offers little more while the mapping
-stays useful to the system.
+mapping.
+
+**Later improvement, raised by the project owner for a second phase**: derive the user ID as an HMAC of the
+customer's phone and email with a secret kept outside the database, and drop the mapping table. Nothing stored would
+then link a conversation to a customer, and the ID would be recomputed from what the customer provides at the order
+check. It needs one more required secret, and losing it would orphan stored conversations.
 
 ## 8. Masking personal data
 

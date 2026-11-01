@@ -42,4 +42,5 @@ A basic check list to help me evolve each topic and track progress of the main c
 - [ ] Figure out if we can make it easy to move to a production ready database (e.g., Postgres) and what would be the implications
 - [ ] Retrieval cache for more static data (e.g., policies, store info) to avoid repeated retrievals
 - [ ] Define memory history based on identified users
+- [ ] Phase two: derive the system user ID with a secret-keyed hash of phone and email instead of a mapping table, so stored conversations can't be linked to a customer without the key
 - [ ] FastAPI or FastMCP for a second phase, if we find time to deploy API and frontend
