@@ -5,6 +5,7 @@ import streamlit as st
 from emporio.agent.contract import Agent
 from emporio.agent.factory import create_agent
 from emporio.chat.conversation import MAX_MESSAGE_LENGTH, Conversation, answer_pending, new_conversation, submit
+from emporio.chat.details_view import render_details
 from emporio.config import Settings, load_settings
 from emporio.safety.sanitize import Sanitizer, load_private_values
 
@@ -33,13 +34,15 @@ def render_header(conversation: Conversation) -> None:
         st.rerun()
 
 
-def render_turns(conversation: Conversation) -> None:
-    for turn in conversation.turns:
+def render_turns(conversation: Conversation, *, troubleshooting: bool) -> None:
+    for index, turn in enumerate(conversation.turns):
         with st.chat_message("user"):
             st.text(turn.message)
         if turn.outcome is not None:
             with st.chat_message("assistant"):
                 st.text(turn.answer)
+                if troubleshooting:
+                    render_details(turn, index)
 
 
 def render_rejected_draft(conversation: Conversation) -> None:
@@ -82,7 +85,7 @@ def main() -> None:
     waiting = conversation.state == "waiting"
 
     render_header(conversation)
-    render_turns(conversation)
+    render_turns(conversation, troubleshooting=runtime.settings.troubleshooting)
     render_rejected_draft(conversation)
 
     # The disabled input must reach the page before the agent call begins (FR-005).
