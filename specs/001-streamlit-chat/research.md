@@ -49,11 +49,14 @@ a submit, so the panel is what keeps the text editable. **Verified** in `AppTest
 full text kept, a second rejection after a still-long edit, a successful send after shortening,
 acceptance at exactly 2,000 characters, discard, and sending a new message while the panel is open.
 
-**Limitation**: Streamlit sends text to the app only on submit, so the count cannot update while the
-person types in the chat input.
+**Limitation**: There is no live character count, and an over-limit message is only rejected after it is
+sent.
 
-**Alternatives considered**: `max_chars` on the input, which limits what can be entered but gives no
-Portuguese message, and its handling of pasted text could not be verified without a browser. A text
+**Alternatives considered**: `max_chars` on the input, which shows a live count and stops typing at the
+limit, but **verified** in Chrome that it silently drops a paste over the limit, leaving the person with
+no message and no text. `on_change`, which `st.chat_input` does not have, and which `st.text_area` fires
+only on blur or Ctrl+Enter. `st.text_input` with `live`, which is single-line and would replace the chat
+input. A text
 area and button for all messages, which would give up the normal chat experience to serve a rare case.
 
 ## 5. Reply time limit

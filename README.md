@@ -90,8 +90,9 @@ in [Stakeholder Clarifications](docs/stakeholder-clarifications.md). Issues in t
 - **Secret removal only knows configured values:** it removes values from `.env` and sensitive
   environment variables, and anything under a sensitive key name. Another secret in free text, such as a
   third-party token in a tool's error message, isn't caught.
-- **Message length:** Streamlit only sends text to the app on submit, so the count can't update as the
-  person types.
+- **Message length:** there's no live character count, and an over-limit message is only rejected after
+  sending. Streamlit's `max_chars` would add a live count, but it silently drops a paste over the limit, so
+  the chat keeps the edit panel instead.
 - **Troubleshooting view:** it shows customer data unmasked, because the data is fictional and the mode is
   for local use. Real customer data would require masking or restricted access.
 - **Crash details:** `make run` hides application crash details from the browser, and `make run-dev`
