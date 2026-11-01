@@ -99,7 +99,7 @@ dependencies are already in `pyproject.toml` and `uv.lock`, so do not add them a
 
 ### Implementation for User Story 2
 
-- [ ] T022 [US2] Add to `src/emporio/chat/conversation.py` the setting of `details_state` to `complete`, `incomplete` or `unavailable`, treating missing or malformed details as `unavailable` without blocking the answer, and building sanitized details in the chat for `failed` and `timed_out` turns (FR-015, SC-004)
+- [X] T022 [US2] Add to `src/emporio/chat/conversation.py` the setting of `details_state` to `complete`, `incomplete` or `unavailable`, treating missing or malformed details as `unavailable` without blocking the answer, and building sanitized details in the chat for `failed` and `timed_out` turns (FR-015, SC-004)
 - [ ] T023 [US2] Implement in `src/emporio/chat/details_view.py` a collapsed expander for each reply with the model, provider, fallback use, total time, sources and details state, one nested expander per step, and an explicit statement when no tools or sources were used (FR-014, FR-015)
 - [ ] T024 [US2] Add to `src/emporio/chat/details_view.py` the large details handling: over 10 steps or 6,000 sanitized characters, show the summary and a button opening an `st.dialog` with one expander per part, and shorten values over 2,000 characters inline with a marker, with the full sanitized value in the modal (see [research.md](research.md), section 6)
 - [ ] T025 [US2] Call the details view from `src/emporio/chat/app.py` only when troubleshooting is on, with no control in the page to change it (FR-013, FR-016)

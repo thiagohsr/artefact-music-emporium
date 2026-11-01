@@ -2,7 +2,7 @@ import time
 
 import pytest
 
-from emporio.agent.contract import AgentReply, ReplyDetails
+from emporio.agent.contract import AgentReply, ReplyDetails, Step
 from emporio.chat.conversation import (
     FAILURE_ANSWER,
     MAX_MESSAGE_LENGTH,
@@ -174,3 +174,82 @@ def test_details_are_sanitized_when_kept():
     turn = answer(waiting_conversation(), ScriptedAgent(reply=reply), keep_details=True)
 
     assert PLANTED not in str(turn.details)
+
+
+def test_details_state_is_complete_for_full_details():
+    reply = AgentReply("Resposta", ReplyDetails(model="qwen3:8b"))
+
+    turn = answer(waiting_conversation(), ScriptedAgent(reply=reply), keep_details=True)
+
+    assert turn.details_state == "complete"
+
+
+def test_details_state_is_incomplete_for_partial_details():
+    reply = AgentReply("Resposta", ReplyDetails(complete=False))
+
+    turn = answer(waiting_conversation(), ScriptedAgent(reply=reply), keep_details=True)
+
+    assert turn.details_state == "incomplete"
+
+
+@pytest.mark.parametrize("details", [None, "not details", ReplyDetails(steps=("not a step",))])
+def test_missing_or_malformed_details_do_not_block_the_answer(details):
+    turn = answer(waiting_conversation(), ScriptedAgent(reply=AgentReply("Resposta", details)), keep_details=True)
+
+    assert turn.outcome == "ok"
+    assert turn.answer == "Resposta"
+    assert turn.details is None
+    assert turn.details_state == "unavailable"
+
+
+def test_details_that_cannot_be_sanitized_are_unavailable():
+    class Unprintable:
+        def __str__(self):
+            raise ValueError("cannot print")
+
+    reply = AgentReply("Resposta", ReplyDetails(steps=(Step(name="passo", kind="tool", result=Unprintable()),)))
+
+    turn = answer(waiting_conversation(), ScriptedAgent(reply=reply), keep_details=True)
+
+    assert turn.outcome == "ok"
+    assert turn.details is None
+    assert turn.details_state == "unavailable"
+
+
+def test_failed_turn_gets_details_with_the_sanitized_error():
+    turn = answer(
+        waiting_conversation(),
+        ScriptedAgent(error=RuntimeError(f"falhou com {PLANTED}")),
+        keep_details=True,
+    )
+
+    assert "RuntimeError" in turn.details.errors[0]
+    assert "falhou com" in turn.details.errors[0]
+    assert PLANTED not in str(turn.details)
+    assert turn.details_state == "incomplete"
+    assert PLANTED not in turn.answer
+
+
+def test_timed_out_turn_gets_details_recording_the_timeout():
+    turn = answer(waiting_conversation(), ScriptedAgent(delay=0.2), timeout_seconds=0.01, keep_details=True)
+
+    assert "timed out" in turn.details.errors[0]
+    assert turn.details_state == "incomplete"
+
+
+def test_blank_reply_keeps_the_details_the_agent_sent():
+    step = Step(name="passo", kind="tool")
+    reply = AgentReply("  ", ReplyDetails(steps=(step,)))
+
+    turn = answer(waiting_conversation(), ScriptedAgent(reply=reply), keep_details=True)
+
+    assert turn.outcome == "failed"
+    assert turn.details.steps == (step,)
+    assert "blank" in turn.details.errors[0]
+
+
+def test_failed_turn_has_no_details_when_troubleshooting_is_off():
+    turn = answer(waiting_conversation(), ScriptedAgent(error=RuntimeError("detalhe")), keep_details=False)
+
+    assert turn.details is None
+    assert turn.details_state == "unavailable"

@@ -1,7 +1,7 @@
 import threading
 import time
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Literal
 
 from emporio.agent.contract import Agent, AgentReply, ReplyDetails, is_valid_details
@@ -15,6 +15,7 @@ FAILURE_ANSWER = (
 
 Outcome = Literal["ok", "failed", "timed_out"]
 SubmitResult = Literal["accepted", "blank", "too_long", "busy"]
+DetailsState = Literal["complete", "incomplete", "unavailable"]
 
 
 @dataclass
@@ -24,6 +25,7 @@ class Turn:
     outcome: Outcome | None = None
     elapsed_ms: float = 0
     details: ReplyDetails | None = None
+    details_state: DetailsState = "unavailable"
 
 
 @dataclass
@@ -73,6 +75,31 @@ def _is_usable(reply: object) -> bool:
     return isinstance(reply, AgentReply) and isinstance(reply.answer, str) and bool(reply.answer.strip())
 
 
+def _describe_failure(outcome: Outcome, result: object) -> str:
+    if outcome == "timed_out":
+        return "The agent timed out before replying."
+    if isinstance(result, Exception):
+        return f"{type(result).__name__}: {result}"
+    return "The agent returned a blank or invalid reply."
+
+
+def _build_details(outcome: Outcome, result: object, sanitizer: Sanitizer) -> tuple[ReplyDetails | None, DetailsState]:
+    """Every failure gets details from the chat, because the agent may not have returned any."""
+    details = getattr(result, "details", None)
+    if not is_valid_details(details):
+        details = None
+    try:
+        if outcome != "ok":
+            base = details or ReplyDetails()
+            error = _describe_failure(outcome, result)
+            details = replace(base, errors=(*base.errors, error), complete=False)
+        if details is None:
+            return None, "unavailable"
+        return sanitizer.value(details), "complete" if details.complete else "incomplete"
+    except Exception:
+        return None, "unavailable"
+
+
 def answer_pending(
     conversation: Conversation,
     agent: Agent,
@@ -90,8 +117,8 @@ def answer_pending(
         outcome = "failed"
     turn.outcome = outcome
     turn.answer = sanitizer.text(result.answer) if outcome == "ok" else FAILURE_ANSWER
-    if outcome == "ok" and keep_details and is_valid_details(result.details):
-        turn.details = sanitizer.value(result.details)
+    if keep_details:
+        turn.details, turn.details_state = _build_details(outcome, result, sanitizer)
 
     conversation.state = "idle"
     return turn
