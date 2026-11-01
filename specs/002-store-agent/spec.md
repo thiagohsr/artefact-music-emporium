@@ -59,7 +59,7 @@ A customer can ask follow-up questions without repeating themselves. A customer 
 1. **Given** a conversation in progress, **When** the customer asks a follow-up question, **Then** the agent answers using the earlier messages.
 2. **Given** a customer who was not verified, **When** the session ends, **Then** the agent no longer holds that conversation.
 3. **Given** a verified customer with an open conversation, **When** they reload the page and are verified again, **Then** the agent finds that conversation and continues it.
-4. **Given** a conversation in progress, **When** the customer uses the new conversation button, **Then** the conversation closes and the agent does not continue it.
+4. **Given** a conversation in progress, **When** the customer uses the new conversation button, **Then** a modal asks them to confirm in Portuguese, and only on confirming does the conversation close, so the agent does not continue it. Cancelling keeps the conversation as it was.
 5. **Given** a conversation with no message for 30 minutes, **When** the customer sends another message, **Then** the conversation has closed and the message starts a new one.
 
 ---
@@ -113,7 +113,7 @@ When the main model or a service fails, the agent uses the fallback, and a devel
 - **FR-011**: Identified customers' conversations MUST be stored in a dedicated table in the store's database, held by a system user ID, with their personal information obfuscated. This is the one exception to FR-018 of the chat feature.
 - **FR-012**: When a customer is verified, the agent MUST use a tool to find that customer's open conversation and continue it, if there is one.
 - **FR-013**: Conversations of customers who were not identified MUST NOT be stored, and MUST last only for the session.
-- **FR-014**: A conversation MUST close when the customer uses the new conversation button, which tells the agent to forget it, or after 30 minutes without a message. A closed conversation MUST NOT be continued. A page reload starts a new session and does not close a conversation.
+- **FR-014**: The new conversation button MUST ask for confirmation in a modal. A conversation MUST close when the customer confirms, which tells the agent to forget it, or after 30 minutes without a message. A closed conversation MUST NOT be continued. A page reload starts a new session and does not close a conversation.
 - **FR-015**: Conversations of different customers and sessions MUST never mix.
 
 #### Failures and improvements
