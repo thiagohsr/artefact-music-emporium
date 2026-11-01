@@ -9,6 +9,9 @@ __pycache__/
 # Generated database (rebuild with: make db)
 *.sqlite
 
+# Policy index, committed so that no embedding provider is needed to build it
+!data/policies.sqlite
+
 # Secrets
 .env
 .env.*

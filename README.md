@@ -13,6 +13,8 @@ You need [uv](https://docs.astral.sh/uv/getting-started/installation/) and `make
 | `make run` | Starts the chat at <http://localhost:8501> |
 | `make run-dev` | Starts the chat with the troubleshooting view and crash details on |
 | `make test` | Runs the automated tests |
+| `make policy-check` | Scores policy retrieval against 16 gold questions (needs an embedding provider) |
+| `make policy-index` | Rebuilds `data/policies.sqlite` from the PDF, only needed if the PDF or model changes |
 
 `make run`, `make run-dev` and `make test` run the setup themselves, so each one works on a fresh
 checkout.
@@ -29,6 +31,12 @@ The chat needs no settings to start. To change one, copy `.env.example` to `.env
 
 Settings are read once at startup, so restart the chat after changing one. An invalid value shows an
 error page naming the setting.
+
+The project uses `qwen3:8b` for chat and `qwen3-embedding:4b` for embeddings, set in `OLLAMA_CHAT_MODEL` and
+`OLLAMA_EMBEDDING_MODEL`. To run them on your own Ollama, pull both models and set `OLLAMA_BASE_URL`. The committed
+policy index only works with the embedding model that built it, so run `make policy-index` after changing that one. To use the project's own server instead, ask for its `OLLAMA_BASE_URL`,
+`CF_ACCESS_CLIENT_ID` and `CF_ACCESS_CLIENT_SECRET` by replying to the selection process e-mail, as they aren't
+published here.
 
 ### Stand-in agent
 
@@ -76,6 +84,13 @@ in [Stakeholder Clarifications](docs/stakeholder-clarifications.md). Issues in t
   This tells the person what happened in Portuguese and never cuts their text silently.
 - **Troubleshooting off by default:** it can only be turned on in the startup settings, never from the
   page.
+- **Policy index committed to the repo:** `data/policies.sqlite` holds the manual split into its 28 numbered
+  sections, with vectors and keyword search, so nobody needs an embedding provider to get it. Sections 7 and
+  10 are instructions for staff, so customer searches skip them. It uses `qwen3-embedding:4b`, the smallest
+  model available on both the local Ollama server and OpenRouter, and vectors from one work with questions
+  embedded on the other. On 16 gold questions, the right section is in the top 3 for all 16 and first for 12,
+  on both providers. Keyword search alone gets 15 of 16 in the top 3, and misses "Me arrependi da minha
+  compra".
 - **Setuptools as the build backend:** the `src/` layout needs a build system, or `import emporio` fails.
   Setuptools finds the package with no extra settings.
 
