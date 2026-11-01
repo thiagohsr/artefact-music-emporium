@@ -1,6 +1,7 @@
 VENV := .venv
 VENV_PYTHON := $(VENV)/bin/python
 PYTHON_VERSION := $(shell cat .python-version)
+DB_FILE := data/emporio.sqlite
 
 # Passes only if the venv exists, its interpreter runs, and it matches .python-version.
 VENV_IS_VALID := test -f $(VENV)/pyvenv.cfg && $(VENV_PYTHON) -c \
@@ -8,7 +9,7 @@ VENV_IS_VALID := test -f $(VENV)/pyvenv.cfg && $(VENV_PYTHON) -c \
 	>/dev/null 2>&1
 
 .DEFAULT_GOAL := help
-.PHONY: help check-uv check-venv venv setup shell lock speckit-check clean reset
+.PHONY: help check-uv check-venv venv setup shell lock db db-reset speckit-check clean reset
 
 help: ## Show available commands
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z_-]+:.*## / {printf "  %-14s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -39,6 +40,13 @@ shell: venv ## Open a new shell with the virtualenv activated (exit to leave)
 
 lock: check-uv ## Update uv.lock after changing pyproject.toml
 	@uv lock
+
+db: venv ## Create the SQLite database if missing and load the current CSVs
+	@. $(VENV)/bin/activate && python scripts/seed_db.py
+
+db-reset: ## Delete the SQLite database and rebuild it from the CSVs
+	@rm -f $(DB_FILE)
+	@$(MAKE) --no-print-directory db
 
 speckit-check: setup ## Check Spec Kit and its tooling
 	@. $(VENV)/bin/activate && specify check
