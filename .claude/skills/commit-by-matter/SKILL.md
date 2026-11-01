@@ -17,8 +17,23 @@ Run `git status --short -uall`, `git diff`, `git diff --cached`, `git branch --s
 
 - If there is nothing to commit, say so and stop.
 - If a merge or rebase is in progress, stop and report it.
-- If the current branch is the default branch, ask whether to create a branch or commit there. Skip
-  this question for `--dry-run`.
+- If the current branch is the default branch, ask whether to create a branch or commit there, and
+  include the proposed branch name in the question. Skip this question for `--dry-run`.
+
+### Branch names
+
+Name new branches `<prefix>/<number>-<description>`, such as `feature/001-streamlit-chat` or
+`doc/002-setup-guide`. Choose the prefix from the commit type of the main subject:
+
+| Commit type | Prefix |
+|---|---|
+| `feat` | `feature/` |
+| `docs` | `doc/` |
+| Any other type | The type itself, such as `fix/` or `build/` |
+
+- **Number:** three digits. Use the spec folder's number when the branch implements a spec. Otherwise
+  use the next number after the highest one on local and remote branches with that prefix.
+- **Description:** a few lowercase words joined by hyphens. For a spec, use the spec folder's name.
 
 ## 2. Scan for sensitive content
 

@@ -43,8 +43,9 @@ If the reply changes the scope, send the updated list and wait again. Treat sile
 
 ## 2. Write the spec
 
-Run `speckit-specify` with only the confirmed scope as its input, and follow its steps and template
-except where the rules above override them. In its checklist, "scope is clearly bounded" means every
+Create the branch as `feature/<spec folder name>`, such as `feature/001-streamlit-chat`. Then run
+`speckit-specify` with only the confirmed scope as its input, and follow its steps and template except
+where the rules above override them. In its checklist, "scope is clearly bounded" means every
 item traces to the confirmed list, not that exclusions are named.
 
 Keep assumptions to facts the approved scope depends on, already known from the project.
