@@ -2,6 +2,8 @@
 
 ## This document is a basic check list to help me evolve each topic and track progress of the main concerns
 
+- Build the seed database with sample data (products, orders, customers, policies, etc.) and make sure it is easy to reset it to the initial state.
+
 - Use streamlit to create the interface and save time on the front-end development. Consider to enable a reasoning mode to show the reasoning and help the troubleshooting.
 
 - Decide python deps: streamlit, langgraph and pydantic (or pydanticAI), uv, pytest, (fastapi or fastMCP for second phase if we find time to deploy API and Frontend)
