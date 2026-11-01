@@ -28,6 +28,7 @@ Expand "Reply details" to see tools and sources. Order details come from `data/e
 | 1 | Say "Oi" | A greeting, asking how it can help, with no tool in the details | US1 |
 | 2 | Ask something vague, like "Queria uma ajuda" | It asks what you need | US1 |
 | 3 | Ask "Quanto custa o Takamine GD20?" | R$ 2.199,00, from `get_product`, then asks if you need anything else | US1 |
+| 3a | Ask "Uma guitarra a partir de 7000 reais até 15 mil reais" | Only guitars in that range, from `search_products` with both limits | US1 |
 | 4 | Ask "Quanto fica em 12x?" | The installment from `payment_terms`, using the earlier product | US1, US3 |
 | 5 | Ask about R$ 500 in 10x | Not allowed, because it's below the R$ 100 minimum | US1 |
 | 6 | Ask for the Giannini GF-3D | Temporarily unavailable, with in-stock alternatives | US1 |

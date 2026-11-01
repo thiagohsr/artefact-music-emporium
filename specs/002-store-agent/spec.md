@@ -34,7 +34,7 @@ A customer talks to the agent the way they would talk to the store's attendants,
 
 *Store data and payment*
 
-7. **Given** the question "Quais opções de violões disponíveis custando até R$1000?", **When** the agent answers, **Then** it lists options found by the product search, with their prices.
+7. **Given** the question "Quais opções de violões disponíveis custando até R$1000?", **When** the agent answers, **Then** it lists options found by the product search, with their prices. A range works the same way, as in "Uma guitarra a partir de 7000 reais até 15 mil reais".
 8. **Given** the question "Quanto custa o Takamine GD20?", **When** the agent answers, **Then** the price comes from the product lookup.
 9. **Given** the question "Qual o endereço da loja?", **When** the agent answers, **Then** the answer comes from the policy lookup.
 10. **Given** a price and a number of installments, **When** a customer asks if they can pay that way, **Then** the amounts and the answer come from the payment tool, including when the installment is below the minimum.
@@ -156,7 +156,7 @@ When the main model or a service fails, the agent uses the fallback, and a devel
 
 | Tool | Use it when | Takes | Returns |
 |---|---|---|---|
-| `search_products` | The customer looks for options, or a similar in-stock product is needed | Text, category, maximum price, whether it must be in stock | Matching products with price, stock, status and any active promotion |
+| `search_products` | The customer looks for options, or a similar in-stock product is needed | Text, category, minimum and maximum price, whether it must be in stock | Matching products with price, stock, status and any active promotion |
 | `get_product` | The customer asks about a specific product | Product name | Price, stock, status, specs, and for an active promotion the original price, discount percentage and final price |
 | `payment_terms` | The customer asks how to pay, or about installments or discounts | Product or amount, payment method, number of installments | Final price, installment value, the minimum that applies, and whether it is allowed |
 | `policy_lookup` | The customer asks about a store rule or the store itself | The question | The matching sections of the manual, with their numbers |

@@ -5,7 +5,7 @@ result, and expected outcomes are data, not exceptions.
 
 | Tool | Parameters | Result |
 |---|---|---|
-| `search_products` | `text`, `category`, `max_price_brl`, `in_stock_only`, all optional | Up to 10 products: name, category, price, stock, status, promotion |
+| `search_products` | `text`, `category`, `min_price_brl`, `max_price_brl`, `in_stock_only`, all optional | Up to 10 products: name, category, price, stock, status, promotion |
 | `get_product` | `name` | One product with specs and promotion, a list of close matches, or not found |
 | `payment_terms` | `method`, plus `product_name` or `amount_brl`, plus `installments` | See below |
 | `policy_lookup` | `question` | Up to 3 customer sections: number, title, text |
@@ -17,6 +17,8 @@ result, and expected outcomes are data, not exceptions.
 ## Products
 
 - A promotion is included only when `is_active` is true, as original price, discount percentage and final price.
+- The price range includes both limits, and compares against the price the customer would pay, which is the final price
+  when a promotion is active. Either limit can be given alone.
 - `search_products` leaves out discontinued products unless the customer named one, which `get_product` handles.
 - Status is always returned, so the agent can apply sections 7.1 and 7.3. A `coming_soon` product is reported as not yet
   available, whatever its stock says.
