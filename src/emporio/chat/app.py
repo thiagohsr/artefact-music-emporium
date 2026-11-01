@@ -4,7 +4,13 @@ import streamlit as st
 
 from emporio.agent.contract import Agent
 from emporio.agent.factory import create_agent
-from emporio.chat.conversation import MAX_MESSAGE_LENGTH, Conversation, answer_pending, new_conversation, submit
+from emporio.chat.conversation import (
+    MAX_MESSAGE_LENGTH,
+    Conversation,
+    answer_pending,
+    new_conversation,
+    submit,
+)
 from emporio.chat.details_view import render_details
 from emporio.config import ConfigError, Settings, load_settings
 from emporio.safety.sanitize import Sanitizer, load_private_values
