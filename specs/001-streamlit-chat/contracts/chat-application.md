@@ -31,7 +31,7 @@ All in Brazilian Portuguese (FR-007). Exact wording is decided during implementa
 |---|---|
 | Input placeholder | An invitation to type a message |
 | New conversation button | Start a new conversation |
-| Waiting | The assistant is preparing a reply |
+| Waiting | The assistant is preparing a reply, with generic wording that changes as the seconds pass |
 | Stand-in notice | Replies are simulated and do not come from the real assistant |
 | Message over the limit | The message's length and the 2,000-character limit, with an edit panel holding the full text and buttons to send or discard |
 | Agent failure or timeout | The assistant could not answer, try again or use WhatsApp (67) 3341-4444 or (67) 3321-4500, or `contato@emporiodamusica.com.br` |

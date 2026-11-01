@@ -12,6 +12,7 @@ from emporio.chat.conversation import (
     submit,
 )
 from emporio.chat.details_view import render_details
+from emporio.chat.utils import waiting_message
 from emporio.config import ConfigError, Settings, load_settings
 from emporio.safety.sanitize import Sanitizer, load_private_values
 
@@ -71,13 +72,25 @@ def render_rejected_draft(conversation: Conversation) -> None:
 
 
 def answer_waiting_turn(conversation: Conversation, runtime: Runtime) -> None:
-    with st.chat_message("assistant"), st.spinner("Preparando sua resposta..."):
+    with st.chat_message("assistant"):
+        # st.spinner cannot change its text once started, and st.status can.
+        shown_message = waiting_message(0)
+        status = st.status(shown_message)
+
+        def show_progress(elapsed_seconds: float) -> None:
+            nonlocal shown_message
+            message = waiting_message(elapsed_seconds)
+            if message != shown_message:
+                status.update(label=message)
+                shown_message = message
+
         answer_pending(
             conversation,
             runtime.agent,
             runtime.sanitizer,
             timeout_seconds=runtime.settings.reply_timeout_seconds,
             keep_details=runtime.settings.troubleshooting,
+            on_wait=show_progress,
         )
     st.rerun()
 
