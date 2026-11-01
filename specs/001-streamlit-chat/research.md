@@ -115,8 +115,16 @@ the stand-in (FR-012). The default changes to the real agent in its own spec.
 ## 10. Dependencies and packaging
 
 **Decision**: Add `streamlit>=1.66,<2` and `python-dotenv>=1,<2`, and `pytest>=9,<10` to the dev group.
-Use hatchling to build the `src/emporio` package.
+Use setuptools to build the `src/emporio` package, as required by the developer.
 
 **Rationale**: Streamlit is the chosen interface. It is a heavy install, including pandas and pyarrow, but
 that is acceptable for this prototype, and the agent package stays free of it. The exact versions are
-pinned by `uv.lock`.
+pinned by `uv.lock`. The `src/` layout needs a build system, because without one uv installs only the
+dependencies and `import emporio` fails, even with `__init__.py` in place. A `[tool.setuptools]` section
+alone does not fix this. **Verified** with uv 0.6.12 that a `[build-system]` section using setuptools
+makes the import work, finds `src/emporio` with no other settings and is not installed in `.venv`.
+
+**Limitation**: Setuptools generates an `.egg-info` folder in `src/`, so `.gitignore` must exclude it.
+
+**Alternatives considered**: Hatchling, which also works and generates no folder, but needs a `packages`
+setting because the project and package names differ, and offers nothing else this project needs.
