@@ -95,13 +95,19 @@ Framework event types, which would tie the chat to a framework.
 
 **Decision**: Sanitize once, in the chat layer, as soon as the agent returns and before anything is
 stored in session state, for replies and details alike. With troubleshooting mode off, details are
-discarded and never stored. Replace known formats (API keys, tokens, JWTs, private keys, bearer values)
-and every value from `.env` and sensitive-looking environment variables, except model names and very
-short values.
+discarded and never stored. Replace every value from `.env` and sensitive-looking environment variables,
+except model names and very short values, and anything under a sensitive key name.
 
-**Rationale**: One entry point means no view can skip it, and it also covers exception text.
+**Rationale**: One entry point means no view can skip it, and it also covers exception text. The real
+secrets in this process are the provider keys, which are in `.env`, so matching them exactly needs no
+guessing.
 
-**Limitation**: Pattern matching can miss unusual secret formats.
+**Limitation**: A secret that is not configured and not under a sensitive key name is not caught.
+
+**Alternatives considered**: `detect-secrets` 1.5.0, which **verified** tests showed is built to flag
+secrets rather than remove them: it missed `sk-` keys and bearer values, and returned partial values
+for GitHub tokens and JWTs. Hand-written format patterns, which guess at formats and leaked part of a
+quoted multi-word value.
 
 ## 9. Selecting the agent and turning on troubleshooting
 
