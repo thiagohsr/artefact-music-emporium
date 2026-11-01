@@ -32,4 +32,5 @@
 ## Notes
 
 - The dedicated table in FR-011 and Streamlit's Stop button in FR-021 name specifics because the project owner and `docs/pending-updates.md` state them.
+- The Agent Tools table names tools and their inputs, because the project owner asked for the spec to detail them.
 - "Scope is clearly bounded" means every item traces to the confirmed scope, as `scoped-spec` defines it.
