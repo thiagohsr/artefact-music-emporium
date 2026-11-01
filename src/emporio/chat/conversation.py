@@ -1,6 +1,7 @@
 import threading
 import time
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from typing import Literal
 
@@ -8,6 +9,7 @@ from emporio.agent.contract import Agent, AgentReply, ReplyDetails, is_valid_det
 from emporio.safety.sanitize import Sanitizer
 
 MAX_MESSAGE_LENGTH = 2000
+WAIT_TICK_SECONDS = 0.1
 FAILURE_ANSWER = (
     "Desculpe, não consegui responder agora. Tente novamente ou fale com a gente pelo WhatsApp "
     "(67) 3341-4444 ou (67) 3321-4500, ou pelo e-mail contato@emporiodamusica.com.br."
@@ -34,6 +36,7 @@ class Conversation:
     turns: list[Turn] = field(default_factory=list)
     state: Literal["idle", "waiting"] = "idle"
     rejected_draft: str | None = None
+    pending_call: "_PendingCall | None" = None
 
 
 def new_conversation() -> Conversation:
@@ -55,20 +58,35 @@ def submit(conversation: Conversation, text: str) -> SubmitResult:
     return "accepted"
 
 
-def _call_agent(agent: Agent, conversation_id: str, message: str, timeout_seconds: float) -> tuple[Outcome, object]:
-    """Runs the call in a daemon thread, because a running call cannot be interrupted."""
-    results: list[tuple[Outcome, object]] = []
+class _PendingCall:
+    """Outlives a Streamlit rerun, so a rerun resumes instead of calling again."""
 
-    def call() -> None:
-        try:
-            results.append(("ok", agent.respond(conversation_id, message)))
-        except Exception as error:
-            results.append(("failed", error))
+    def __init__(self, agent: Agent, conversation_id: str, message: str) -> None:
+        self.started = time.monotonic()
+        self._results: list[tuple[Outcome, object]] = []
 
-    thread = threading.Thread(target=call, daemon=True)
-    thread.start()
-    thread.join(timeout_seconds)
-    return results[0] if results else ("timed_out", None)
+        def call() -> None:
+            try:
+                self._results.append(("ok", agent.respond(conversation_id, message)))
+            except Exception as error:
+                self._results.append(("failed", error))
+
+        # A daemon thread, because a running call cannot be interrupted.
+        self._thread = threading.Thread(target=call, daemon=True)
+        self._thread.start()
+
+    def elapsed_seconds(self) -> float:
+        return time.monotonic() - self.started
+
+    def wait(self, timeout_seconds: float, on_wait: Callable[[float], None] | None) -> tuple[Outcome, object]:
+        while self._thread.is_alive():
+            remaining = timeout_seconds - self.elapsed_seconds()
+            if remaining <= 0:
+                break
+            if on_wait is not None:
+                on_wait(self.elapsed_seconds())
+            self._thread.join(min(WAIT_TICK_SECONDS, remaining))
+        return self._results[0] if self._results else ("timed_out", None)
 
 
 def _is_usable(reply: object) -> bool:
@@ -107,11 +125,15 @@ def answer_pending(
     *,
     timeout_seconds: float,
     keep_details: bool,
+    on_wait: Callable[[float], None] | None = None,
 ) -> Turn:
     turn = conversation.turns[-1]
-    started = time.monotonic()
-    outcome, result = _call_agent(agent, conversation.id, turn.message, timeout_seconds)
-    turn.elapsed_ms = (time.monotonic() - started) * 1000
+    if conversation.pending_call is None:
+        conversation.pending_call = _PendingCall(agent, conversation.id, turn.message)
+    pending = conversation.pending_call
+    outcome, result = pending.wait(timeout_seconds, on_wait)
+    turn.elapsed_ms = pending.elapsed_seconds() * 1000
+    conversation.pending_call = None
 
     if outcome == "ok" and not _is_usable(result):
         outcome = "failed"

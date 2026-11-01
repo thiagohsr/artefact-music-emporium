@@ -253,3 +253,74 @@ def test_failed_turn_has_no_details_when_troubleshooting_is_off():
 
     assert turn.details is None
     assert turn.details_state == "unavailable"
+
+
+def test_on_wait_reports_growing_elapsed_seconds_while_the_agent_runs():
+    seen = []
+
+    answer_pending(
+        waiting_conversation(),
+        ScriptedAgent(delay=0.25),
+        Sanitizer(),
+        timeout_seconds=2,
+        keep_details=False,
+        on_wait=seen.append,
+    )
+
+    assert len(seen) >= 2
+    assert seen == sorted(seen)
+    assert seen[0] >= 0
+
+
+def test_interrupted_wait_resumes_without_calling_the_agent_again():
+    class Interrupted(BaseException):
+        """Streamlit stops a script with an exception like this when a rerun is requested."""
+
+    def interrupt(_elapsed):
+        raise Interrupted
+
+    conversation = waiting_conversation()
+    agent = ScriptedAgent(delay=0.2)
+
+    with pytest.raises(Interrupted):
+        answer_pending(
+            conversation,
+            agent,
+            Sanitizer(),
+            timeout_seconds=2,
+            keep_details=False,
+            on_wait=interrupt,
+        )
+    assert conversation.state == "waiting"
+
+    turn = answer(conversation, agent)
+
+    assert len(agent.calls) == 1
+    assert turn.outcome == "ok"
+    assert conversation.state == "idle"
+
+
+def test_resumed_wait_keeps_counting_from_the_first_call():
+    class Interrupted(BaseException):
+        pass
+
+    def interrupt(_elapsed):
+        raise Interrupted
+
+    conversation = waiting_conversation()
+    agent = ScriptedAgent(delay=0.3)
+    with pytest.raises(Interrupted):
+        answer_pending(
+            conversation,
+            agent,
+            Sanitizer(),
+            timeout_seconds=0.1,
+            keep_details=False,
+            on_wait=interrupt,
+        )
+    time.sleep(0.15)
+
+    turn = answer(conversation, agent, timeout_seconds=0.1)
+
+    assert turn.outcome == "timed_out"
+    assert turn.elapsed_ms >= 100
