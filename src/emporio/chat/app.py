@@ -6,7 +6,7 @@ from emporio.agent.contract import Agent
 from emporio.agent.factory import create_agent
 from emporio.chat.conversation import MAX_MESSAGE_LENGTH, Conversation, answer_pending, new_conversation, submit
 from emporio.chat.details_view import render_details
-from emporio.config import Settings, load_settings
+from emporio.config import ConfigError, Settings, load_settings
 from emporio.safety.sanitize import Sanitizer, load_private_values
 
 
@@ -78,13 +78,20 @@ def answer_waiting_turn(conversation: Conversation, runtime: Runtime) -> None:
 
 def main() -> None:
     st.set_page_config(page_title="Empório da Música")
-    runtime = load_runtime()
+    try:
+        runtime = load_runtime()
+    except ConfigError as error:
+        st.title("Empório da Música")
+        st.error(f"The application could not start. Check this setting. {error}")
+        st.stop()
     if "conversation" not in st.session_state:
         st.session_state.conversation = new_conversation()
     conversation: Conversation = st.session_state.conversation
     waiting = conversation.state == "waiting"
 
     render_header(conversation)
+    if runtime.agent.is_simulated:
+        st.info("As respostas são simuladas e não vêm do assistente real.")
     render_turns(conversation, troubleshooting=runtime.settings.troubleshooting)
     render_rejected_draft(conversation)
 
