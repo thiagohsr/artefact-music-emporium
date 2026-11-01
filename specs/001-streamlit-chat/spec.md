@@ -1,6 +1,6 @@
 # Feature Specification: Customer Chat with Troubleshooting View
 
-**Feature Branch**: `001-streamlit-chat`
+**Feature Branch**: `feature/001-streamlit-chat`
 
 **Created**: 2026-11-01
 
