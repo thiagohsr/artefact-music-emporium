@@ -24,3 +24,16 @@ Logging must stay in the terminal, because the app must not save conversations o
 
 **Decide in the agent spec**: Typed agent errors, such as a provider being unavailable. The stand-in has
 only one simulated failure, so defining them now would be guesswork.
+
+## Improvements for the real agent
+
+**When**: While interacting with the real agent, which will show how much each one matters.
+
+| Issue | Where | Current behavior |
+|---|---|---|
+| Lists and numbers under sensitive keys | `Sanitizer._clean_item` in `src/emporio/safety/sanitize.py` | Only string values are redacted under names like `api_key`, so `{"api_key": ["abc"]}` passes unchanged |
+| `errors` given as a string | `is_valid_details` in `src/emporio/agent/contract.py` | It accepts `ReplyDetails(errors="boom")`, and the view prints it one character at a time |
+| Blank edit in the long-message panel | `submit` in `src/emporio/chat/conversation.py` | Clearing the text and clicking Enviar does nothing visible, and the old error stays |
+
+**Verify first**: Whether Streamlit's Stop button during a wait leaves the page disabled until a refresh.
+A code review raised this, but it has not been reproduced.
