@@ -1,0 +1,10 @@
+# Safe defaults: `make run-dev` overrides showErrorDetails for debugging.
+[browser]
+gatherUsageStats = false
+
+[client]
+showErrorDetails = "none"
+toolbarMode = "minimal"
+
+[server]
+address = "localhost"

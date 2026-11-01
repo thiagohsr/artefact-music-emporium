@@ -28,8 +28,8 @@ dependencies are already in `pyproject.toml` and `uv.lock`, so do not add them a
 
 - [X] T001 Create empty `src/emporio/__init__.py`, `src/emporio/agent/__init__.py`, `src/emporio/safety/__init__.py` and `src/emporio/chat/__init__.py`. Add to `pyproject.toml` a `[build-system]` section with `requires = ["setuptools>=77"]` and `build-backend = "setuptools.build_meta"`, add `*.egg-info/` to `.gitignore`, run `uv lock` and `make setup`, and confirm `uv run python -c "import emporio"` succeeds
 - [X] T002 Add `[tool.pytest.ini_options]` with `testpaths = ["tests"]` to `pyproject.toml`, and create the `tests/contract/`, `tests/unit/` and `tests/integration/` folders
-- [ ] T003 [P] Create `.streamlit/config.toml` with `browser.gatherUsageStats = false`, `client.showErrorDetails = "none"`, `client.toolbarMode = "minimal"` and `server.address = "localhost"`
-- [ ] T004 [P] Create `.env.example` documenting `EMPORIO_AGENT` (`stand_in`, the default), `EMPORIO_TROUBLESHOOTING` (`0` or `1`, default `0`) and `EMPORIO_REPLY_TIMEOUT_SECONDS` (positive number, default `60`), following [contracts/chat-application.md](contracts/chat-application.md)
+- [X] T003 [P] Create `.streamlit/config.toml` with `browser.gatherUsageStats = false`, `client.showErrorDetails = "none"`, `client.toolbarMode = "minimal"` and `server.address = "localhost"`
+- [X] T004 [P] Create `.env.example` documenting `EMPORIO_AGENT` (`stand_in`, the default), `EMPORIO_TROUBLESHOOTING` (`0` or `1`, default `0`) and `EMPORIO_REPLY_TIMEOUT_SECONDS` (positive number, default `60`), following [contracts/chat-application.md](contracts/chat-application.md)
 - [ ] T005 Add to `Makefile`, and to its `.PHONY` list, the targets `run` (depends on `setup`, starts `streamlit run src/emporio/chat/app.py`), `run-dev` (the same with `EMPORIO_TROUBLESHOOTING=1` and `--client.showErrorDetails=full`) and `test` (depends on `setup`, runs `pytest`), each with a `##` help comment and activating `$(VENV)` as the other targets do
 
 **Checkpoint**: `make setup` and `import emporio` work.
