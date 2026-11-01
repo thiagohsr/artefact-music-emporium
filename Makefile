@@ -9,7 +9,7 @@ VENV_IS_VALID := test -f $(VENV)/pyvenv.cfg && $(VENV_PYTHON) -c \
 	>/dev/null 2>&1
 
 .DEFAULT_GOAL := help
-.PHONY: help check-uv check-venv venv setup shell lock db db-reset speckit-check clean reset
+.PHONY: help check-uv check-venv venv setup shell lock db db-reset run run-dev test speckit-check clean reset
 
 help: ## Show available commands
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z_-]+:.*## / {printf "  %-14s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -47,6 +47,15 @@ db: venv ## Create the SQLite database if missing and load the current CSVs
 db-reset: ## Delete the SQLite database and rebuild it from the CSVs
 	@rm -f $(DB_FILE)
 	@$(MAKE) --no-print-directory db
+
+run: setup ## Start the chat
+	@. $(VENV)/bin/activate && streamlit run src/emporio/chat/app.py
+
+run-dev: setup ## Start the chat with troubleshooting and crash details on
+	@. $(VENV)/bin/activate && EMPORIO_TROUBLESHOOTING=1 streamlit run src/emporio/chat/app.py --client.showErrorDetails=full
+
+test: setup ## Run the automated tests
+	@. $(VENV)/bin/activate && pytest
 
 speckit-check: setup ## Check Spec Kit and its tooling
 	@. $(VENV)/bin/activate && specify check
