@@ -1,7 +1,8 @@
 # Stakeholder Clarifications
 
 Conflicts found in the store manual (`data/políticas_da_loja.pdf`, version 2.1), the rule the agent
-follows until each is settled, and what the store needs to confirm.
+follows until each is settled, and what the store needs to confirm. Open questions about the store
+data are in [Store Data Corner Cases](corner-cases/store-data.md).
 
 | # | Topic | Working rule | Status |
 |---|---|---|---|
