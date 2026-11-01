@@ -16,7 +16,7 @@ personal data masked, so they can be continued after a page reload.
 
 **Language/Version**: Python 3.13, managed with uv
 
-**Primary Dependencies**: Adds `pydantic-ai-slim[openai]` and `httpx`. Existing: Streamlit, python-dotenv.
+**Primary Dependencies**: Adds `pydantic-ai-slim[openai]>=2.64,<3` and `httpx>=0.28,<1`. Existing: Streamlit, python-dotenv.
 
 **Storage**: `data/emporio.sqlite` gains conversation and complaint tables. `data/policies.sqlite` stays read-only.
 
@@ -117,6 +117,8 @@ so they can be tested as plain functions and would not change if the agent were 
 - Add `make db` as a prerequisite of `make run` and `make run-dev`, because `data/emporio.sqlite` isn't committed
   and the agent needs it.
 - Set `PYDANTIC_AI_NO_BANNER=1` before importing Pydantic AI, because it prints a promotional banner otherwise.
+- Confirm that Pydantic AI runs synchronous tools off the event loop. If it doesn't, a slow tool would stall every
+  other session, and the tools must be wrapped with `asyncio.to_thread`.
 - Update the chat test that clicks "Nova conversa", which now opens the modal first.
 - Tests that assert the default agent is the stand-in change with FR-001, and `specs/001-streamlit-chat/quickstart.md`
   now needs `EMPORIO_AGENT=stand_in`.
@@ -124,4 +126,5 @@ so they can be tested as plain functions and would not change if the agent were 
 - Remove from `docs/pending-updates.md` what this feature completes.
 - Add to the README: the decisions in [research.md](research.md), and these limitations: masking can miss unusual
   formats, stored conversations are never deleted automatically despite manual section 9, complaints have no screen
-  for the store's team yet, and a finished conversation stays on screen until the next message.
+  for the store's team yet, nothing limits repeated guesses at an order's phone and email, and a finished conversation
+  stays on screen until the next message.
