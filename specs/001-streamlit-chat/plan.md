@@ -17,7 +17,7 @@ are sanitized when they enter the chat layer, so secrets cannot reach the page.
 **Language/Version**: Python 3.13, managed with uv
 
 **Primary Dependencies**: Streamlit 1.66+, python-dotenv (reads private values so they can be removed).
-Dev: pytest. Build backend: hatchling. No agent framework, FastAPI or MCP in this feature.
+Dev: pytest. Build backend: setuptools. No agent framework, FastAPI or MCP in this feature.
 
 **Storage**: None. Conversations live in browser session state, and nothing is written to disk. The
 SQLite database is not used by this feature.
@@ -98,7 +98,9 @@ the factory. Existing `scripts/seed_db.py` stays where it is.
 
 ## Implementation Notes for Tasks
 
-- Add a build system to `pyproject.toml` so `uv sync` installs the package, then update `uv.lock`.
+- When creating `src/emporio/`, add a `[build-system]` section to `pyproject.toml` with
+  `requires = ["setuptools>=77"]` and `build-backend = "setuptools.build_meta"`, so `uv sync` installs
+  the package. Add `*.egg-info/` to `.gitignore`, then update `uv.lock`.
 - Add `make run`, `make run-dev` and `make test`, plus a `.env.example` with the new settings.
 - Update the README with run instructions and the decisions in [research.md](research.md). Under known
   limitations, state that the troubleshooting view shows customer data unmasked, because the data is
