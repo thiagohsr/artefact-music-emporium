@@ -29,7 +29,7 @@ venv: check-uv ## Create the virtualenv, or recreate it if it is not valid
 	@if $(VENV_IS_VALID); then \
 		echo "$(VENV) is valid: $$($(VENV_PYTHON) --version)"; \
 	else \
-		rm -rf $(VENV) && uv venv --python $(PYTHON_VERSION) $(VENV); \
+		rm -rf $(VENV) && uv venv --python $(PYTHON_VERSION) --prompt . $(VENV); \
 	fi
 
 setup: venv ## Ensure the virtualenv, activate it, and install locked dependencies
