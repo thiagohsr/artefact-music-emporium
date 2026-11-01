@@ -32,8 +32,9 @@ The chat needs no settings to start. To change one, copy `.env.example` to `.env
 Settings are read once at startup, so restart the chat after changing one. An invalid value shows an
 error page naming the setting.
 
-The project uses `qwen3:8b` for chat and `qwen3-embedding:4b` for embeddings. To run them on your own Ollama, pull
-both models and set `OLLAMA_BASE_URL`. To use the project's own server instead, ask for its `OLLAMA_BASE_URL`,
+The project uses `qwen3:8b` for chat and `qwen3-embedding:4b` for embeddings, set in `OLLAMA_CHAT_MODEL` and
+`OLLAMA_EMBEDDING_MODEL`. To run them on your own Ollama, pull both models and set `OLLAMA_BASE_URL`. The committed
+policy index only works with the embedding model that built it, so run `make policy-index` after changing that one. To use the project's own server instead, ask for its `OLLAMA_BASE_URL`,
 `CF_ACCESS_CLIENT_ID` and `CF_ACCESS_CLIENT_SECRET` by replying to the selection process e-mail, as they aren't
 published here.
 

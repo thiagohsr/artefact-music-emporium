@@ -12,9 +12,11 @@ from pathlib import Path
 from dotenv import dotenv_values, find_dotenv
 
 INDEX_PATH = Path(__file__).resolve().parents[3] / "data" / "policies.sqlite"
-OLLAMA_MODEL = "qwen3-embedding:4b"
-# The same model on both providers, so an index built on one answers queries embedded on the other.
-OPENROUTER_MODEL = "qwen/qwen3-embedding-4b"
+DEFAULT_OLLAMA_EMBEDDING_MODEL = "qwen3-embedding:4b"
+DEFAULT_OPENROUTER_EMBEDDING_MODEL = "qwen/qwen3-embedding-4b"
+# One model under each provider's name: in tests their vectors for the same text had a cosine of about 0.98
+# and ranked sections alike, so an index built on one answers questions embedded on the other.
+EQUIVALENT_MODELS = {DEFAULT_OLLAMA_EMBEDDING_MODEL, DEFAULT_OPENROUTER_EMBEDDING_MODEL}
 OPENROUTER_URL = "https://openrouter.ai/api/v1/embeddings"
 REQUEST_TIMEOUT_SECONDS = 120
 
@@ -41,10 +43,18 @@ def _post(url: str, payload: dict, headers: Mapping[str, str]) -> dict:
         return json.load(response)
 
 
+def ollama_embedding_model(settings: Mapping[str, str]) -> str:
+    return settings.get("OLLAMA_EMBEDDING_MODEL") or DEFAULT_OLLAMA_EMBEDDING_MODEL
+
+
+def openrouter_embedding_model(settings: Mapping[str, str]) -> str:
+    return settings.get("OPENROUTER_EMBEDDING_MODEL") or DEFAULT_OPENROUTER_EMBEDDING_MODEL
+
+
 def embed_with_ollama(texts: Sequence[str], settings: Mapping[str, str]) -> list[list[float]]:
     response = _post(
         f"{settings['OLLAMA_BASE_URL'].rstrip('/')}/api/embed",
-        {"model": OLLAMA_MODEL, "input": list(texts)},
+        {"model": ollama_embedding_model(settings), "input": list(texts)},
         {
             "CF-Access-Client-Id": settings.get("CF_ACCESS_CLIENT_ID", ""),
             "CF-Access-Client-Secret": settings.get("CF_ACCESS_CLIENT_SECRET", ""),
@@ -56,7 +66,7 @@ def embed_with_ollama(texts: Sequence[str], settings: Mapping[str, str]) -> list
 def embed_with_openrouter(texts: Sequence[str], settings: Mapping[str, str]) -> list[list[float]]:
     response = _post(
         OPENROUTER_URL,
-        {"model": OPENROUTER_MODEL, "input": list(texts)},
+        {"model": openrouter_embedding_model(settings), "input": list(texts)},
         {"Authorization": f"Bearer {settings['OPENROUTER_API_KEY']}"},
     )
     return [item["embedding"] for item in sorted(response["data"], key=lambda item: item["index"])]
@@ -75,6 +85,12 @@ def decode_vector(blob: bytes) -> array.array:
 def _cosine(left: Sequence[float], right: Sequence[float]) -> float:
     dot = sum(a * b for a, b in zip(left, right, strict=True))
     return dot / (math.sqrt(sum(a * a for a in left)) * math.sqrt(sum(b * b for b in right)))
+
+
+def is_compatible(conn: sqlite3.Connection, model: str) -> bool:
+    """Vectors from another model can have the same size, so a mismatch would rank wrongly without any error."""
+    built_with = conn.execute("SELECT value FROM index_metadata WHERE key = 'model'").fetchone()[0]
+    return model == built_with or {model, built_with} <= EQUIVALENT_MODELS
 
 
 def search_vectors(conn: sqlite3.Connection, query_vector: Sequence[float], limit: int = 3) -> list[Match]:

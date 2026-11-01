@@ -10,11 +10,11 @@ from pypdf import PdfReader
 
 from emporio.data.policy_index import (
     INDEX_PATH,
-    OLLAMA_MODEL,
-    OPENROUTER_MODEL,
     embed_with_ollama,
     embed_with_openrouter,
     encode_vector,
+    ollama_embedding_model,
+    openrouter_embedding_model,
     read_settings,
 )
 
@@ -102,9 +102,9 @@ def embedding_text(section: Section, titles: dict[str, str]) -> str:
 def embed(texts: list[str]) -> tuple[list[list[float]], str, str]:
     settings = read_settings()
     if settings.get("OLLAMA_BASE_URL"):
-        return embed_with_ollama(texts, settings), "ollama", OLLAMA_MODEL
+        return embed_with_ollama(texts, settings), "ollama", ollama_embedding_model(settings)
     if settings.get("OPENROUTER_API_KEY"):
-        return embed_with_openrouter(texts, settings), "openrouter", OPENROUTER_MODEL
+        return embed_with_openrouter(texts, settings), "openrouter", openrouter_embedding_model(settings)
     sys.exit("Set OLLAMA_BASE_URL or OPENROUTER_API_KEY to build the policy index.")
 
 

@@ -6,6 +6,9 @@ from emporio.data.policy_index import (
     INDEX_PATH,
     embed_with_ollama,
     embed_with_openrouter,
+    is_compatible,
+    ollama_embedding_model,
+    openrouter_embedding_model,
     read_settings,
     search_keywords,
     search_vectors,
@@ -48,13 +51,15 @@ def main() -> None:
     questions = [question for question, _ in GOLD_SET]
     embedders = {}
     if settings.get("OLLAMA_BASE_URL"):
-        embedders["ollama"] = embed_with_ollama
+        embedders["ollama"] = (embed_with_ollama, ollama_embedding_model(settings))
     if settings.get("OPENROUTER_API_KEY"):
-        embedders["openrouter"] = embed_with_openrouter
+        embedders["openrouter"] = (embed_with_openrouter, openrouter_embedding_model(settings))
 
     with contextlib.closing(sqlite3.connect(f"file:{INDEX_PATH}?mode=ro", uri=True)) as conn:
         recalls = []
-        for provider, embed in embedders.items():
+        for provider, (embed, model) in embedders.items():
+            if not is_compatible(conn, model):
+                sys.exit(f"{model} did not build this index. Run: make policy-index")
             vectors = embed(questions, settings)
             recalls.append(
                 report(
