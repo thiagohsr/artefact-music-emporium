@@ -13,7 +13,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -31,6 +31,5 @@
 
 ## Notes
 
-- One marker remains, on page reload, which the project owner will clarify.
 - The dedicated table in FR-011 and Streamlit's Stop button in FR-021 name specifics because the project owner and `docs/pending-updates.md` state them.
 - "Scope is clearly bounded" means every item traces to the confirmed scope, as `scoped-spec` defines it.
