@@ -56,10 +56,44 @@ installment minimums. The rules the agent follows, and the questions still open 
 in [Stakeholder Clarifications](docs/stakeholder-clarifications.md). Issues in the store data are in
 [Store Data Corner Cases](docs/corner-cases/store-data.md).
 
+## Decisions
+
+- **Streamlit, called directly:** the chat calls the agent in the same process, with no API layer. This
+  keeps the prototype to one command while the focus is on the agent and its evaluation. The agent
+  doesn't depend on Streamlit, so it can be called from a script or test.
+- **One small agent interface:** the chat only knows `respond(conversation_id, message)`. Reply details
+  are plain dataclasses with a generic list of steps, so they don't tie the chat to an agent framework.
+- **Stand-in agent:** it lets the chat and its failure paths be built and tested with no model or store
+  data. It's never used silently: the page shows a notice, and a real agent that fails to start shows an
+  error instead of falling back to it.
+- **Plain text only:** messages and replies are rendered with `st.text`, so text from customers or tools
+  can't change the page. This gives up lists and emphasis in replies, which can be revisited if the real
+  agent needs them.
+- **Secrets removed in one place:** replies and details pass through the sanitizer as soon as the agent
+  returns, before anything is stored, so no view can skip it. With troubleshooting off, details are
+  discarded and never stored.
+- **Long messages:** they're validated after sending rather than with a character limit on the input.
+  This tells the person what happened in Portuguese and never cuts their text silently.
+- **Troubleshooting off by default:** it can only be turned on in the startup settings, never from the
+  page.
+- **Setuptools as the build backend:** the `src/` layout needs a build system, or `import emporio` fails.
+  Setuptools finds the package with no extra settings.
+
 ## Known Limitations
 
-> **Draft:** this describes planned behavior for the chat, which is not built yet.
-
+- **Interface:** the chat runs in one process and is meant for local use and small demos. There's no
+  login, so it binds to localhost. A real integration would need a separate API.
+- **Conversations aren't saved:** a conversation ends when the page is refreshed or closed.
+- **Timed-out calls keep running:** a running call can't be interrupted, so a call that times out continues
+  until it ends, and its result is discarded. The real agent should set timeouts on its own model and tool
+  calls.
+- **Secret removal only knows configured values:** it removes values from `.env` and sensitive
+  environment variables, and anything under a sensitive key name. Another secret in free text, such as a
+  third-party token in a tool's error message, isn't caught.
+- **Message length:** Streamlit only sends text to the app on submit, so the count can't update as the
+  person types.
+- **Troubleshooting view:** it shows customer data unmasked, because the data is fictional and the mode is
+  for local use. Real customer data would require masking or restricted access.
 - **Crash details:** `make run` hides application crash details from the browser, and `make run-dev`
   shows them in full to make debugging easier. Streamlit displays these details itself, so they skip
   the step that removes secrets. A secret in a crash message could appear on screen in `make run-dev`,

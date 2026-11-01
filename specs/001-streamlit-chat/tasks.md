@@ -134,9 +134,9 @@ dependencies are already in `pyproject.toml` and `uv.lock`, so do not add them a
 
 **Purpose**: Record the decisions and validate the feature end to end.
 
-- [ ] T030 Update `README.md` with the decisions in [research.md](research.md) (Principle V). Under Known Limitations, remove the Draft label from the crash details item, and state that the troubleshooting view shows customer data unmasked, because the data is fictional and the mode is for local use, and that real customer data would require masking or restricted access
-- [ ] T031 Run `make test`, and confirm that nothing under `src/emporio/agent/` imports Streamlit and that nothing writes conversations or details to disk (FR-018) by reviewing `src/emporio/`
-- [ ] T032 Run every check in [quickstart.md](quickstart.md) in a real browser, including nested expanders and the modal, which `AppTest` cannot show, and fix anything that fails in the file responsible
+- [X] T030 Update `README.md` with the decisions in [research.md](research.md) (Principle V). Under Known Limitations, remove the Draft label from the crash details item, and state that the troubleshooting view shows customer data unmasked, because the data is fictional and the mode is for local use, and that real customer data would require masking or restricted access
+- [X] T031 Run `make test`, and confirm that nothing under `src/emporio/agent/` imports Streamlit and that nothing writes conversations or details to disk (FR-018) by reviewing `src/emporio/`
+- [X] T032 Run every check in [quickstart.md](quickstart.md) in a real browser, including nested expanders and the modal, which `AppTest` cannot show, and fix anything that fails in the file responsible
 
 ---
 
