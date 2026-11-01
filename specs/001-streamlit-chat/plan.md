@@ -1,6 +1,6 @@
 # Implementation Plan: Customer Chat with Troubleshooting View
 
-**Branch**: `001-streamlit-chat` | **Date**: 2026-11-01 | **Spec**: [spec.md](spec.md)
+**Branch**: `feature/001-streamlit-chat` | **Date**: 2026-11-01 | **Spec**: [spec.md](spec.md)
 
 **Input**: Feature specification from `/specs/001-streamlit-chat/spec.md`
 
@@ -98,6 +98,8 @@ the factory. Existing `scripts/seed_db.py` stays where it is.
 
 ## Implementation Notes for Tasks
 
+- The Streamlit, python-dotenv and pytest dependencies are already in `pyproject.toml` and `uv.lock`, so
+  do not add them again.
 - When creating `src/emporio/`, add a `[build-system]` section to `pyproject.toml` with
   `requires = ["setuptools>=77"]` and `build-backend = "setuptools.build_meta"`, so `uv sync` installs
   the package. Add `*.egg-info/` to `.gitignore`, then update `uv.lock`.
