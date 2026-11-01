@@ -3,9 +3,20 @@ name = "artefact-music-emporium"
 version = "0.1.0"
 description = "Text-message customer service agent prototype for Empório da Música, a fictional musical instrument store."
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "python-dotenv>=1,<2",
+    "streamlit>=1.66,<2",
+]
+
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
 
 [dependency-groups]
 dev = [
+    "pytest>=9,<10",
     "specify-cli==1.2.5",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
