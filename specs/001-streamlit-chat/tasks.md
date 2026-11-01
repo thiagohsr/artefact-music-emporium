@@ -124,7 +124,7 @@ dependencies are already in `pyproject.toml` and `uv.lock`, so do not add them a
 
 - [X] T027 [US3] Add to `src/emporio/chat/app.py` the visible Portuguese notice, shown whenever the selected agent has `is_simulated` set to true (FR-012)
 - [X] T028 [US3] Add to `src/emporio/chat/app.py` the startup error page for configuration errors from `src/emporio/config.py` and `src/emporio/agent/factory.py`, naming the setting and stopping before the chat renders (FR-012, FR-020)
-- [ ] T029 [US3] Add to `README.md` the setup and run instructions for `make setup`, `make run`, `make run-dev` and `make test`, the settings in `.env.example`, and the stand-in commands for manual testing (FR-019, SC-001)
+- [X] T029 [US3] Add to `README.md` the setup and run instructions for `make setup`, `make run`, `make run-dev` and `make test`, the settings in `.env.example`, and the stand-in commands for manual testing (FR-019, SC-001)
 
 **Checkpoint**: All user stories work on their own, and an evaluator can start the chat from the README.
 
