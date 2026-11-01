@@ -18,7 +18,7 @@ def test_private_values_are_removed_from_text(sanitizer):
 
 
 def test_nested_values_and_dictionary_keys_are_sanitized(sanitizer):
-    cleaned = sanitizer.value(
+    cleaned = sanitizer.clean(
         {
             f"chave-{PRIVATE_VALUE}": [{"detalhe": f"usando {PRIVATE_VALUE}"}, (PRIVATE_VALUE,)],
             "numero": 3,
@@ -34,7 +34,7 @@ def test_nested_values_and_dictionary_keys_are_sanitized(sanitizer):
 
 
 def test_values_under_sensitive_keys_are_removed(sanitizer):
-    cleaned = sanitizer.value({"api_key": "short", "total_tokens": 42})
+    cleaned = sanitizer.clean({"api_key": "short", "total_tokens": 42})
 
     assert cleaned == {"api_key": REDACTED, "total_tokens": 42}
 
@@ -44,7 +44,7 @@ def test_objects_that_are_not_json_become_sanitized_text(sanitizer):
         def __str__(self):
             return f"objeto com {PRIVATE_VALUE}"
 
-    assert PRIVATE_VALUE not in sanitizer.value(Custom())
+    assert PRIVATE_VALUE not in sanitizer.clean(Custom())
 
 
 def test_exception_text_is_sanitized(sanitizer):
@@ -61,7 +61,7 @@ def test_reply_dataclasses_are_sanitized_and_keep_their_types(sanitizer):
         ),
     )
 
-    cleaned = sanitizer.value(reply)
+    cleaned = sanitizer.clean(reply)
 
     assert isinstance(cleaned, AgentReply)
     assert isinstance(cleaned.details.steps[0], Step)

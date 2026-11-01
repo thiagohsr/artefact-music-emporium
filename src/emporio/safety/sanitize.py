@@ -23,24 +23,29 @@ class Sanitizer:
             value = value.replace(private_value, REDACTED)
         return value
 
-    def value(self, value: Any) -> Any:
-        if value is None or isinstance(value, bool | int | float):
-            return value
-        if isinstance(value, str):
-            return self.text(value)
-        if isinstance(value, Mapping):
-            return {self.text(str(key)): self._mapping_item(key, item) for key, item in value.items()}
-        if isinstance(value, list | tuple):
-            return type(value)(self.value(item) for item in value)
-        if dataclasses.is_dataclass(value) and not isinstance(value, type):
-            fields = {field.name: self.value(getattr(value, field.name)) for field in dataclasses.fields(value)}
-            return dataclasses.replace(value, **fields)
-        return self.text(str(value))
+    def clean(self, data: Any) -> Any:
+        match data:
+            case str():
+                return self.text(data)
+            case None | bool() | int() | float():
+                return data
+            case Mapping():
+                return {self.text(str(key)): self._clean_item(key, item) for key, item in data.items()}
+            case list() | tuple():
+                return type(data)(map(self.clean, data))
+            case _ if dataclasses.is_dataclass(data) and not isinstance(data, type):
+                return self._clean_dataclass(data)
+            case _:
+                return self.text(str(data))
 
-    def _mapping_item(self, key: Any, item: Any) -> Any:
+    def _clean_item(self, key: Any, item: Any) -> Any:
         if isinstance(item, str) and _SENSITIVE_NAME.search(str(key)):
             return REDACTED
-        return self.value(item)
+        return self.clean(item)
+
+    def _clean_dataclass(self, data: Any) -> Any:
+        changes = {field.name: self.clean(getattr(data, field.name)) for field in dataclasses.fields(data)}
+        return dataclasses.replace(data, **changes)
 
 
 def load_private_values(

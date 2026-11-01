@@ -113,7 +113,7 @@ def _build_details(outcome: Outcome, result: object, sanitizer: Sanitizer) -> tu
             details = replace(base, errors=(*base.errors, error), complete=False)
         if details is None:
             return None, "unavailable"
-        return sanitizer.value(details), "complete" if details.complete else "incomplete"
+        return sanitizer.clean(details), "complete" if details.complete else "incomplete"
     except Exception:
         return None, "unavailable"
 
