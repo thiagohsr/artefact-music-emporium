@@ -48,19 +48,19 @@ A customer asks about their order and provides the order number, phone and email
 
 ### User Story 3 - Continue a conversation (Priority: P2)
 
-A customer can ask follow-up questions without repeating themselves. A customer whose identity was verified can come back later and continue, once verified again. Anyone else's conversation lasts only for the session.
+A customer can ask follow-up questions without repeating themselves. A customer whose identity was verified can continue their open conversation after a page reload, once verified again. Anyone else's conversation lasts only for the session.
 
 **Why this priority**: Follow-up questions are part of a normal text conversation, and returning customers should not have to start over.
 
-**Independent Test**: Ask a follow-up in one session. Verify a customer, end the session, verify again in a new one, and confirm the earlier conversation is available. Repeat without verifying and confirm it is not.
+**Independent Test**: Ask a follow-up in one session. Verify a customer, reload the page, verify again, and confirm the conversation continues. Repeat without verifying, and after using the new conversation button, and confirm it does not.
 
 **Acceptance Scenarios**:
 
 1. **Given** a conversation in progress, **When** the customer asks a follow-up question, **Then** the agent answers using the earlier messages.
 2. **Given** a customer who was not verified, **When** the session ends, **Then** the agent no longer holds that conversation.
-3. **Given** a customer who was verified, **When** they are verified again in a later session, **Then** the agent continues from their earlier conversation.
-4. **Given** a session in progress, **When** the customer uses the new conversation button, **Then** the session ends and the agent no longer uses that conversation in the new one.
-5. **Given** a session with no message for 30 minutes, **When** the customer sends another message, **Then** it starts a new session.
+3. **Given** a verified customer with an open conversation, **When** they reload the page and are verified again, **Then** the agent finds that conversation and continues it.
+4. **Given** a conversation in progress, **When** the customer uses the new conversation button, **Then** the conversation closes and the agent does not continue it.
+5. **Given** a conversation with no message for 30 minutes, **When** the customer sends another message, **Then** the conversation has closed and the message starts a new one.
 
 ---
 
@@ -86,7 +86,7 @@ When the main model or a service fails, the agent uses the fallback, and a devel
 - An order whose stored total differs from its items is quoted at the stored total, as recorded in `docs/corner-cases/store-data.md`.
 - A search that finds nothing leads the agent to say so and point to the store's contact channels, instead of guessing.
 - A customer verified on one order asks about another order, which needs its own verification.
-- **Page reload**: [NEEDS CLARIFICATION: what should a page reload do to a conversation in progress? To be clarified by the project owner.]
+- **Page reload**: the page starts empty in a new session. An identified customer's conversation stays open, so they can continue it by verifying again. Any other conversation is lost.
 
 ## Requirements *(mandatory)*
 
@@ -95,7 +95,7 @@ When the main model or a service fails, the agent uses the fallback, and a devel
 #### Agent
 
 - **FR-001**: The agent MUST replace the stand-in as the default agent, behind the existing agent interface.
-- **FR-002**: The agent MUST work as one agent that decides which tools to use, for products, orders, payment terms and policy lookup, and can use several for one question.
+- **FR-002**: The agent MUST work as one agent that decides which tools to use, for products, orders, payment terms, policy lookup and finding a customer's open conversation, and can use several for one question.
 - **FR-003**: Prices, stock, promotions and order details MUST come from a lookup made for that answer, and store rules from the policy manual.
 - **FR-004**: Calculated values, such as installments and discounts, MUST come from a tool, following the rules in the manual and `docs/stakeholder-clarifications.md`.
 - **FR-005**: The agent MUST reply in Brazilian Portuguese with the store's persona and tone, and follow guidance for each domain.
@@ -111,9 +111,9 @@ When the main model or a service fails, the agent uses the fallback, and a devel
 
 - **FR-010**: A customer MUST count as identified once they pass the order check in FR-008.
 - **FR-011**: Identified customers' conversations MUST be stored in a dedicated table in the store's database, held by a system user ID, with their personal information obfuscated. This is the one exception to FR-018 of the chat feature.
-- **FR-012**: An identified customer MUST be able to continue their stored conversation once verified again.
+- **FR-012**: When a customer is verified, the agent MUST use a tool to find that customer's open conversation and continue it, if there is one.
 - **FR-013**: Conversations of customers who were not identified MUST NOT be stored, and MUST last only for the session.
-- **FR-014**: A session MUST end when the customer uses the new conversation button, which tells the agent to forget the conversation in progress, or after 30 minutes without a message.
+- **FR-014**: A conversation MUST close when the customer uses the new conversation button, which tells the agent to forget it, or after 30 minutes without a message. A closed conversation MUST NOT be continued. A page reload starts a new session and does not close a conversation.
 - **FR-015**: Conversations of different customers and sessions MUST never mix.
 
 #### Failures and improvements
@@ -128,8 +128,8 @@ When the main model or a service fails, the agent uses the fallback, and a devel
 ### Key Entities
 
 - **Customer**: a person in the store data, identified by the system user ID once verified.
-- **Stored conversation**: an identified customer's messages, held by system user ID with personal information obfuscated.
-- **Session**: a period of conversation that ends on the new conversation button or after 30 minutes without a message.
+- **Stored conversation**: an identified customer's messages, held by system user ID with personal information obfuscated, either open or closed.
+- **Session**: one page's time in the chat, which ends on a page reload, the new conversation button or 30 minutes without a message.
 - **Tool**: a defined action the agent can take on store data, payment rules or the policy manual.
 
 ## Success Criteria *(mandatory)*
@@ -138,7 +138,7 @@ When the main model or a service fails, the agent uses the fallback, and a devel
 
 - **SC-001**: On the real model, the four sample questions in the brief, one installment question and one order question with identity check all get correct answers.
 - **SC-002**: In a test of order questions with a wrong or missing phone or email, including customers who share an email, 0 replies share order details.
-- **SC-003**: A customer verified in one session gets their earlier conversation in a later one, and a customer who was not verified gets none.
+- **SC-003**: After a page reload, a verified customer continues their open conversation once verified again. A customer who was not verified, or whose conversation closed, continues nothing.
 - **SC-004**: Inspecting the stored conversations finds 0 names, phones or emails in readable form.
 - **SC-005**: With the primary model unavailable, the sample questions are still answered through the fallback.
 - **SC-006**: With troubleshooting off, 100% of failures appear in the terminal, with 0 secrets, and 0 technical details appear on the page.
@@ -147,5 +147,5 @@ When the main model or a service fails, the agent uses the fallback, and a devel
 
 - **Existing interface**: the chat, its troubleshooting view and its 60-second reply limit stay as specified in `specs/001-streamlit-chat/`, apart from what this feature changes.
 - **Existing data**: the store data and the committed policy index are the sources, and the agent only reads them.
-- **Stored conversations**: the new conversation button and the 30-minute limit end the session, and an identified customer's stored conversation stays available to continue.
+- **Stored conversations**: a closed conversation stays stored, and is not continued.
 - **Contact and rule conflicts**: handled as recorded in `docs/stakeholder-clarifications.md`.
