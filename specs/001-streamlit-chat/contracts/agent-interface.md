@@ -27,7 +27,7 @@ The data types are defined in [data-model.md](../data-model.md).
 ## Stand-in agent
 
 `is_simulated` is `True`, it uses no model or store data, and the same input always gives the same
-output. A leading command in the message selects what it simulates (FR-011):
+output. Its `private_values` lists the fake key from `/sensivel`, so the chat removes it. A leading command in the message selects what it simulates (FR-011):
 
 | Message starts with | Simulates |
 |---|---|
