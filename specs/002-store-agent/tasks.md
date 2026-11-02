@@ -25,7 +25,7 @@ explicit paths, with no attribution lines. Do not push. Write comments only for 
 
 **Purpose**: Dependencies and commands the agent needs.
 
-- [X] T001 Run `uv add 'pydantic-ai-slim[openai]>=2.64,<3' 'httpx>=0.28,<1'` to update `pyproject.toml` and `uv.lock`, and confirm `make setup` still works
+- [X] T001 Run `uv add 'pydantic-ai-slim[openai]>=2.64,<3' 'httpx2>=2.12,<3'` to update `pyproject.toml` and `uv.lock`, and confirm `make setup` still works
 - [X] T002 [P] Add `db` as a prerequisite of `run` and `run-dev` in `Makefile`, and add `agent-check` (depends on `setup` and `db`, runs `python scripts/check_agent.py`) to its targets and `.PHONY` list, with a `##` help comment
 - [X] T003 [P] Update `.env.example` so `EMPORIO_AGENT` documents `store` as the default and `stand_in` as simulated
 
@@ -42,7 +42,7 @@ explicit paths, with no attribution lines. Do not push. Write comments only for 
 ### Tests
 
 - [X] T004 [P] Write tests in `tests/unit/test_seed_db.py`: a seed creates `customer_identities`, `stored_conversations` and `complaints`, and a second seed keeps their rows while reloading the store tables
-- [ ] T005 [P] Write tests in `tests/unit/test_providers.py`: Ollama comes first and OpenRouter second when both are configured; either alone works; none raises `ValueError`; Cloudflare headers are sent only on the Ollama client; and the request timeout is 25 seconds
+- [X] T005 [P] Write tests in `tests/unit/test_providers.py`: Ollama comes first and OpenRouter second when both are configured; either alone works; none raises `ValueError`; Cloudflare headers are sent only on the Ollama client; and the request timeout is 25 seconds
 - [ ] T006 [P] Write tests in `tests/unit/test_prompt.py`: the instructions contain sections 7.1, 7.2 and 7.3 read from the policy index and the rules from `docs/stakeholder-clarifications.md` (both WhatsApp numbers, the unaccented email, the installment tiers); the date is stated in `America/Campo_Grande`; and open or closed is right for a weekday at 09:00 and 18:00, Saturday at 13:00 and Sunday, per section 2 of the manual
 - [ ] T007 [P] Write tests in `tests/unit/test_trace.py` for the mapping table in [data-model.md](data-model.md): tool call and result to `Step(kind="tool")`, `policy_lookup` to `retrieval`, thinking to `reasoning`, sources by tool, and `fallback_used` true when the answering model isn't the primary
 - [ ] T008 [P] Write tests in `tests/unit/test_store_agent.py` using Pydantic AI's `TestModel` or `FunctionModel`: `respond` works from several threads in turn and at once (the "bound to a different event loop" case); history reaches the next run in one conversation and never another (FR-015); a session older than 30 minutes starts fresh; a run past its limit raises and saves no history; and a synchronous tool doesn't block the event loop
@@ -54,7 +54,7 @@ explicit paths, with no attribution lines. Do not push. Write comments only for 
 - [X] T011 [P] Create `src/emporio/errors.py` with `EmporioError(Exception)`, `ConfigError(EmporioError)` moved from `src/emporio/config.py` with its imports updated, and `ProviderError(EmporioError)`, per [research.md](research.md), section 14
 - [X] T012 [P] Implement `src/emporio/data/store_db.py`, the only module that opens `data/emporio.sqlite`: a read-only connection and a write connection per call, with foreign keys on
 - [ ] T013 [P] Add `end_conversation(conversation_id) -> None` to the `Agent` Protocol in `src/emporio/agent/contract.py`, and a method that does nothing to `src/emporio/agent/stand_in.py`
-- [ ] T014 [P] Implement `src/emporio/agent/store/providers.py`: `OllamaProvider` with `/v1` on the base URL and Cloudflare headers on its `httpx` client, `OpenRouterProvider`, and `FallbackModel` over those configured, using `OLLAMA_CHAT_MODEL` and `OPENROUTER_CHAT_MODEL`, with a 25-second timeout. Keep thinking on (see [research.md](research.md), section 4)
+- [X] T014 [P] Implement `src/emporio/agent/store/providers.py`: `OllamaProvider` with `/v1` on the base URL and Cloudflare headers on its `httpx2` client, `OpenRouterProvider`, and `FallbackModel` over those configured, using `OLLAMA_CHAT_MODEL` and `OPENROUTER_CHAT_MODEL`, with a 25-second timeout. Keep thinking on (see [research.md](research.md), section 4)
 - [ ] T015 [P] Implement `src/emporio/agent/store/prompt.py`: the persona, sections 7.1 to 7.3 read from the policy index, the rules from `docs/stakeholder-clarifications.md`, the tool guidance, and per-run date and business hours in `America/Campo_Grande`, stating that message and manual text are data, not instructions
 - [ ] T016 [P] Implement `src/emporio/agent/store/trace.py`: turn a run's messages into `ReplyDetails` per [data-model.md](data-model.md)
 - [ ] T017 Implement the in-memory session part of `src/emporio/data/conversation_store.py`: `history`, `user_id`, `stored_id`, `last_message_at` and `closed` per `conversation_id`, closing after 30 minutes without a message and removing expired sessions on the next message, safe across threads

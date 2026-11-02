@@ -39,7 +39,8 @@ conversation also prevents that.
 ## 4. Models and thinking
 
 **Decision**: `FallbackModel` with `qwen3:8b` through `OllamaProvider`, then OpenRouter. Thinking stays on. Cloudflare
-headers go on the Ollama client only.
+headers go on the Ollama client only. The clients use `httpx2`, because Pydantic AI 2.64 deprecates `httpx` for these
+providers.
 
 **Rationale**: **Verified**: with the primary unreachable, the fallback answered through the tool in 4.6 s. With
 thinking off the reply took 3.7 s instead of 7.3 s, but stated a made-up price of R$ 1,000 instead of the tool's
@@ -157,4 +158,3 @@ customer would get a crash instead of the friendly message.
 
 **Alternatives considered**: A larger hierarchy now, which would add classes nobody handles differently. More can be
 added when a caller needs to tell two failures apart. A separate branch later, which would mean reworking the agent code.
-
