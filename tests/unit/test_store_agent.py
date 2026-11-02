@@ -5,10 +5,16 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 from pydantic_ai import Tool
-from pydantic_ai.messages import ModelResponse, TextPart, ToolCallPart, ToolReturnPart, UserPromptPart
+from pydantic_ai.messages import (
+    ModelResponse,
+    TextPart,
+    ToolCallPart,
+    ToolReturnPart,
+    UserPromptPart,
+)
 from pydantic_ai.models.function import FunctionModel
 
-from emporio.agent.store.agent import StoreAgent
+from emporio.agent.store.agent import TOOLS, StoreAgent
 from emporio.data.conversation_store import SessionStore
 
 
@@ -132,3 +138,11 @@ def test_details_come_from_this_run_only():
     agent = build(call_once, tools=[Tool(noop)])
     assert [s.name for s in agent.respond("c1", "usa").details.steps] == ["noop"]
     assert agent.respond("c1", "oi").details.steps == ()
+
+
+def test_payment_terms_requires_the_number_of_installments():
+    schema = {tool.name: tool.function_schema.json_schema for tool in TOOLS}["payment_terms"]
+
+    assert "installments" in schema["required"]
+    assert "method" not in schema["required"]
+

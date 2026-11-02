@@ -87,8 +87,8 @@ explicit paths, with no attribution lines. Do not push. Write comments only for 
 - [X] T026 [P] [US1] Implement `policy_lookup` in `src/emporio/tools/policies.py` using `src/emporio/data/policy_index.py`, with a short embedding timeout, and vectors only when `is_compatible` passes
 - [X] T027 [P] [US1] Implement the shared masking in `src/emporio/data/conversation_store.py` (emails and phone-shaped text, plus exact known values), and `register_complaint` in `src/emporio/tools/complaints.py` using it
 - [X] T028 [US1] Implement `finish_conversation` in `src/emporio/tools/conversations.py`
-- [ ] T029 [US1] Register the tools from T024 to T028 in `src/emporio/agent/store/agent.py`, with descriptions saying when to use each, as in the spec's Agent Tools table (FR-022)
-- [ ] T030 [US1] Create `scripts/check_agent.py`: run the brief's questions, an installment question and each special situation in User Story 1 on the real model, checking the tools called and the expected values, printing each question's result and time, and exiting non-zero on failure
+- [X] T029 [US1] Register the tools from T024 to T028 in `src/emporio/agent/store/agent.py`, with descriptions saying when to use each, as in the spec's Agent Tools table (FR-022)
+- [X] T030 [US1] Create `scripts/check_agent.py`: run the brief's questions, an installment question and each special situation in User Story 1 on the real model, checking the tools called and the expected values, printing each question's result and time, and exiting non-zero on failure
 
 **Checkpoint**: `make test` passes, and `make agent-check` passes for this story on the real model. This is the MVP.
 

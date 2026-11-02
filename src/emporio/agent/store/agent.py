@@ -5,6 +5,7 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 os.environ.setdefault("PYDANTIC_AI_NO_BANNER", "1")
 
@@ -19,8 +20,13 @@ from emporio.agent.store.providers import build_model
 from emporio.agent.store.trace import build_details
 from emporio.data.conversation_store import Session, SessionStore
 from emporio.data.policy_index import read_settings
-from emporio.data.store_db import DB_PATH
+from emporio.data.store_db import DB_PATH, read_connection, write_connection
 from emporio.errors import ProviderError
+from emporio.tools.catalog import get_product, search_products
+from emporio.tools.complaints import register_complaint
+from emporio.tools.conversations import finish_conversation
+from emporio.tools.payments import Method, payment_terms
+from emporio.tools.policies import policy_lookup
 
 RUN_LIMIT_MARGIN_SECONDS = 5
 
@@ -36,6 +42,93 @@ class Turn:
     db_path: Path
     settings: Mapping[str, str]
     now: datetime
+
+
+def _search_products(
+    context: RunContext[Turn],
+    text: str | None = None,
+    category: str | None = None,
+    min_price_brl: float | None = None,
+    max_price_brl: float | None = None,
+    in_stock_only: bool = False,
+) -> dict[str, Any]:
+    with read_connection(context.deps.db_path) as conn:
+        return search_products(conn, text, category, min_price_brl, max_price_brl, in_stock_only)
+
+
+def _get_product(context: RunContext[Turn], name: str) -> dict[str, Any]:
+    with read_connection(context.deps.db_path) as conn:
+        return get_product(conn, name)
+
+
+def _payment_terms(
+    context: RunContext[Turn],
+    installments: int,
+    product_name: str | None = None,
+    amount_brl: float | None = None,
+    method: Method = "credit",
+) -> dict[str, Any]:
+    with read_connection(context.deps.db_path) as conn:
+        return payment_terms(conn, method, product_name, amount_brl, installments)
+
+
+def _policy_lookup(context: RunContext[Turn], question: str) -> dict[str, Any]:
+    return policy_lookup(question, context.deps.settings)
+
+
+def _register_complaint(context: RunContext[Turn], summary: str) -> dict[str, Any]:
+    with write_connection(context.deps.db_path) as conn:
+        return register_complaint(conn, summary)
+
+
+def _finish_conversation(context: RunContext[Turn]) -> dict[str, Any]:
+    return finish_conversation(context.deps.session)
+
+
+TOOLS = (
+    Tool(
+        _search_products,
+        name="search_products",
+        description=(
+            "Use quando o cliente procura opções, ou para achar um produto semelhante em estoque. Filtra por texto, "
+            "categoria, faixa de preço e estoque. Categorias: Baixos, Baterias e Percussão, Cordas Orquestrais, "
+            "Guitarras, Instrumentos de Sopro (Madeiras), Instrumentos de Sopro (Metais), Teclados e Pianos, "
+            "Ukuleles, Violões."
+        ),
+    ),
+    Tool(
+        _get_product,
+        name="get_product",
+        description="Use quando o cliente pergunta sobre um produto específico: preço, estoque, situação, promoção e especificações.",
+    ),
+    Tool(
+        _payment_terms,
+        name="payment_terms",
+        description=(
+            "Use quando o cliente pergunta como pagar, sobre parcelas ou descontos. Informe product_name ou amount_brl, "
+            "e installments com o número de parcelas pedido, ou 1 para pagamento à vista. method é credit por padrão, "
+            "ou pix, debit ou boleto. Devolve o preço final, o valor da parcela, a parcela mínima e se é permitido."
+        ),
+    ),
+    Tool(
+        _policy_lookup,
+        name="policy_lookup",
+        description="Use quando o cliente pergunta sobre uma regra da loja ou sobre a própria loja: endereço, horários, trocas, frete, garantia, privacidade.",
+    ),
+    Tool(
+        _register_complaint,
+        name="register_complaint",
+        description="Use quando o cliente faz uma reclamação, com um resumo do que ele relatou. Devolve o prazo de retorno.",
+    ),
+    Tool(
+        _finish_conversation,
+        name="finish_conversation",
+        description=(
+            'Use assim que o cliente disser que não precisa de mais nada, como "era só isso" ou "não, obrigado". '
+            "Chame esta ferramenta de verdade, antes de escrever a despedida."
+        ),
+    ),
+)
 
 
 class StoreAgent:
@@ -101,5 +194,6 @@ def create_store_agent(reply_timeout_seconds: float) -> StoreAgent:
         primary_model=primary_model,
         settings=settings,
         reply_timeout_seconds=reply_timeout_seconds,
+        tools=TOOLS,
     )
 

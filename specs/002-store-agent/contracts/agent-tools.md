@@ -7,7 +7,7 @@ result, and expected outcomes are data, not exceptions.
 |---|---|---|
 | `search_products` | `text`, `category`, `min_price_brl`, `max_price_brl`, `in_stock_only`, all optional | Up to 10 products: name, category, price, stock, status, promotion |
 | `get_product` | `name` | One product with specs and promotion, a list of close matches, or not found |
-| `payment_terms` | `method`, plus `product_name` or `amount_brl`, plus `installments` | See below |
+| `payment_terms` | `installments` (required), `product_name` or `amount_brl`, and `method` (`credit` by default) | See below |
 | `policy_lookup` | `question` | Up to 3 customer sections: number, title, text |
 | `get_order_status` | `order_number`, `phone`, `email` | The order, or one fixed "not verified" result |
 | `find_open_conversation` | None | The masked transcript, or none |
