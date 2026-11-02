@@ -13,7 +13,8 @@ from emporio.chat.conversation import (
 )
 from emporio.chat.details_view import render_details
 from emporio.chat.utils import waiting_message
-from emporio.config import ConfigError, Settings, load_settings
+from emporio.config import Settings, load_settings
+from emporio.errors import ConfigError
 from emporio.safety.sanitize import Sanitizer, load_private_values
 
 

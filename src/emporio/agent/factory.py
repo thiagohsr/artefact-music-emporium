@@ -2,7 +2,8 @@ from collections.abc import Callable
 
 from emporio.agent.contract import Agent
 from emporio.agent.stand_in import StandInAgent
-from emporio.config import ConfigError, Settings
+from emporio.config import Settings
+from emporio.errors import ConfigError
 
 SLOW_REPLY_MARGIN_SECONDS = 5
 

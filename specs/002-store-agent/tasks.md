@@ -51,7 +51,7 @@ explicit paths, with no attribution lines. Do not push. Write comments only for 
 ### Implementation
 
 - [X] T010 Add the three tables from [data-model.md](data-model.md) to `scripts/seed_db.py` with `CREATE TABLE IF NOT EXISTS`, leaving them out of `TABLES` so that seeding keeps their rows
-- [ ] T011 [P] Create `src/emporio/errors.py` with `EmporioError(Exception)`, `ConfigError(EmporioError)` moved from `src/emporio/config.py` with its imports updated, and `ProviderError(EmporioError)`, per [research.md](research.md), section 14
+- [X] T011 [P] Create `src/emporio/errors.py` with `EmporioError(Exception)`, `ConfigError(EmporioError)` moved from `src/emporio/config.py` with its imports updated, and `ProviderError(EmporioError)`, per [research.md](research.md), section 14
 - [ ] T012 [P] Implement `src/emporio/data/store_db.py`, the only module that opens `data/emporio.sqlite`: a read-only connection and a write connection per call, with foreign keys on
 - [ ] T013 [P] Add `end_conversation(conversation_id) -> None` to the `Agent` Protocol in `src/emporio/agent/contract.py`, and a method that does nothing to `src/emporio/agent/stand_in.py`
 - [ ] T014 [P] Implement `src/emporio/agent/store/providers.py`: `OllamaProvider` with `/v1` on the base URL and Cloudflare headers on its `httpx` client, `OpenRouterProvider`, and `FallbackModel` over those configured, using `OLLAMA_CHAT_MODEL` and `OPENROUTER_CHAT_MODEL`, with a 25-second timeout. Keep thinking on (see [research.md](research.md), section 4)

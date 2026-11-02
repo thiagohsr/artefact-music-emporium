@@ -2,7 +2,8 @@ import pytest
 
 from emporio.agent.factory import AGENTS, create_agent
 from emporio.agent.stand_in import StandInAgent
-from emporio.config import ConfigError, Settings, load_settings
+from emporio.config import Settings, load_settings
+from emporio.errors import ConfigError
 
 
 def test_defaults():
