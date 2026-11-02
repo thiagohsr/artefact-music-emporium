@@ -1,12 +1,23 @@
 import asyncio
+import re
 import threading
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 
 from pydantic_ai.messages import ModelMessage
 
 SESSION_LIMIT = timedelta(minutes=30)
+EMAIL = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
+PHONE = re.compile(r"(?<![\w.-])(?:\+?55[\s-]*)?\(?\d{2}\)?[\s-]*9?\d{4}[\s-]?\d{4}(?!\w)")
+
+
+def mask(text: str, known_values: Sequence[str] = ()) -> str:
+    """Exact known values go first, because the patterns can't recognize a name."""
+    for value in known_values:
+        if value:
+            text = text.replace(value, "[nome]")
+    return PHONE.sub("[telefone]", EMAIL.sub("[email]", text))
 
 
 def utc_now() -> datetime:
