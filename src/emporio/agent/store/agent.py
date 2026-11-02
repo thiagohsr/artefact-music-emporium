@@ -25,6 +25,7 @@ from emporio.errors import ProviderError
 from emporio.tools.catalog import get_product, search_products
 from emporio.tools.complaints import register_complaint
 from emporio.tools.conversations import finish_conversation
+from emporio.tools.orders import get_order_status
 from emporio.tools.payments import Method, payment_terms
 from emporio.tools.policies import policy_lookup
 
@@ -76,6 +77,14 @@ def _policy_lookup(context: RunContext[Turn], question: str) -> dict[str, Any]:
     return policy_lookup(question, context.deps.settings)
 
 
+def _get_order_status(context: RunContext[Turn], order_number: str, phone: str, email: str) -> dict[str, Any]:
+    with read_connection(context.deps.db_path) as conn:
+        result, customer = get_order_status(conn, order_number, phone, email, context.deps.now.date())
+    if customer is not None:
+        context.deps.session.customer = customer
+    return result
+
+
 def _register_complaint(context: RunContext[Turn], summary: str) -> dict[str, Any]:
     with write_connection(context.deps.db_path) as conn:
         return register_complaint(conn, summary)
@@ -114,6 +123,16 @@ TOOLS = (
         _policy_lookup,
         name="policy_lookup",
         description="Use quando o cliente pergunta sobre uma regra da loja ou sobre a própria loja: endereço, horários, trocas, frete, garantia, privacidade.",
+    ),
+    Tool(
+        _get_order_status,
+        name="get_order_status",
+        description=(
+            "Use quando o cliente pergunta sobre um pedido. Exige o número do pedido, o telefone e o e-mail informados "
+            "pelo cliente nesta conversa: nunca invente nem complete esses dados, peça o que faltar. Status: pending "
+            "(pendente), confirmed (confirmado), shipped (enviado), delivered (entregue), cancelled (cancelado). "
+            "days_since_estimate conta os dias desde a previsão de entrega, porque não há data real de entrega."
+        ),
     ),
     Tool(
         _register_complaint,

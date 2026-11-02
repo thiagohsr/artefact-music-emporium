@@ -4,6 +4,7 @@ import threading
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from pydantic_ai.messages import ModelMessage
 
@@ -29,6 +30,7 @@ class Session:
     last_message_at: datetime
     history: list[ModelMessage] = field(default_factory=list)
     closed: bool = False
+    customer: Any = None
     lock: asyncio.Lock = field(default_factory=asyncio.Lock)
 
     def is_over(self, now: datetime) -> bool:

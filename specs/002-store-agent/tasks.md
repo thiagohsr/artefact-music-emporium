@@ -104,11 +104,11 @@ explicit paths, with no attribution lines. Do not push. Write comments only for 
 
 > **NOTE: Write these tests first and confirm they fail before implementation.**
 
-- [ ] T031 [US2] Write tests in `tests/unit/test_orders.py`: success returns status, order date, stored total, payment method, items, tracking code, delivery estimate and days since that estimate; phones compare by digits and emails ignore case; a wrong phone, a wrong email and an unknown order give identical results; customers 11 and 43, who share an email, can't reach each other's orders; the stored total is never recalculated (orders 3 and 20); success records the customer in the session, and failure records nothing
+- [X] T031 [US2] Write tests in `tests/unit/test_orders.py`: success returns status, order date, stored total, payment method, items, tracking code, delivery estimate and days since that estimate; phones compare by digits and emails ignore case; a wrong phone, a wrong email and an unknown order give identical results; customers 11 and 43, who share an email, can't reach each other's orders; the stored total is never recalculated (orders 3 and 20); success records the customer in the session, and failure records nothing
 
 ### Implementation for User Story 2
 
-- [ ] T032 [US2] Implement `get_order_status` in `src/emporio/tools/orders.py` per [contracts/agent-tools.md](contracts/agent-tools.md), recording the customer in the session from the check and never from a model value (FR-024), and register it in `src/emporio/agent/store/agent.py`
+- [X] T032 [US2] Implement `get_order_status` in `src/emporio/tools/orders.py` per [contracts/agent-tools.md](contracts/agent-tools.md), recording the customer in the session from the check and never from a model value (FR-024), and register it in `src/emporio/agent/store/agent.py`
 - [ ] T033 [P] [US2] Update `docs/corner-cases/store-data.md` to require both the email and the phone
 - [ ] T034 [US2] Add the order questions to `scripts/check_agent.py`: with correct details, with each missing and wrong, and "Me arrependi da minha compra, posso devolver meu pedido?" with a verified customer
 
