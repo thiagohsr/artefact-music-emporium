@@ -17,7 +17,7 @@ The other 48 customers each have their own address.
 that lookup, one customer could see the other's orders, which Principle III of the constitution
 prohibits.
 
-**Proposed handling**: start from the order and match the email or phone given by the person against
+**Handling**: start from the order and match both the email and the phone given by the person against
 the customer linked to that order. Do not identify a customer by email alone. Test this with both
 customers, using an order that belongs to only one of them.
 
