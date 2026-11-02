@@ -139,6 +139,9 @@ def test_a_command_must_be_the_whole_first_word(agent):
         ReplyDetails(steps=("not a step",)),
         ReplyDetails(sources=("not a source",)),
         ReplyDetails(errors=(1,)),
+        ReplyDetails(errors="boom"),
+        ReplyDetails(steps="boom"),
+        ReplyDetails(sources="boom"),
     ],
 )
 def test_invalid_details_are_recognized(details):

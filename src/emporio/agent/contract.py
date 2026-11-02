@@ -68,6 +68,7 @@ def is_valid_details(details: Any) -> bool:
     try:
         return (
             isinstance(details, ReplyDetails)
+            and all(isinstance(group, list | tuple) for group in (details.steps, details.sources, details.errors))
             and all(_is_valid_step(step) for step in details.steps)
             and all(_is_valid_source(source) for source in details.sources)
             and all(isinstance(error, str) for error in details.errors)
