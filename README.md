@@ -63,3 +63,8 @@ are simulated. Start a message with one of these commands to simulate a situatio
 [Decisions and Limitations](docs/decisions-and-limitations.md) justifies the framework, model, retrieval
 architecture, prompt strategy and conversation history, records the assumptions made where the store's
 material is ambiguous, and lists the known limitations.
+
+## Example Conversations
+
+[Sample Scenarios](docs/sample-scenarios.md) suggests questions to try in the chat, covering the catalog, store
+information, prices and the return policy.
