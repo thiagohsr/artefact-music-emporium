@@ -42,9 +42,11 @@ Returns the final price, the installment value, the minimum that applies, `allow
 - `order_number` accepts the order number or the tracking code, ignoring case and separators.
 - The order is looked up first, then the phone (digits only) and email (ignoring case) are compared with that order's
   customer. Any failure gives the same result, including an order that doesn't exist.
-- On success it returns status, order date, stored total, payment method, items, tracking code, delivery estimate and
+- On success it returns status, stored total, payment method, items, tracking code, delivery estimate and
   days since that estimate, and it records the customer in the session.
 - The stored total is returned as it is, never recalculated.
+- The order date isn't returned. **Verified**: with it, `qwen3:8b` said "entregue em" that date in 5 of 5 runs, even when told
+  not to, and the data has no actual delivery date.
 
 ## Agent interface
 

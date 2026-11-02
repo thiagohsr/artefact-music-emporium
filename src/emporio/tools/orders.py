@@ -59,7 +59,6 @@ def get_order_status(
         "customer_name": order["name"],
         "order_number": order["order_id"],
         "status": order["status"],
-        "order_date": order["order_date"],
         "total_brl": order["total_brl"],
         "payment_method": order["payment_method"],
         "items": [{"name": name, "quantity": quantity} for name, quantity in items],
