@@ -138,3 +138,23 @@ checks which tools were called and that the expected values appear in the answer
 
 **Rationale**: `make test` can't prove a real model picks the right tools, and SC-001 has to be repeatable. Full
 scoring stays in the evaluation stage.
+
+## 14. Exception pattern
+
+**Decision**: Follow Ruff's `BLE001` across the project, as required by the project owner. Add `EmporioError(Exception)`
+with `ConfigError` and `ProviderError` under it, in `src/emporio/errors.py`.
+
+| Rule | Where |
+|---|---|
+| Catch specific errors | Everywhere by default |
+| A broad catch, always logged, with `# noqa: BLE001` and its reason | Only at real boundaries: the guarded agent call, building reply details, and agent start |
+| Translate library errors into our classes, with `raise ... from error` | Where the agent calls a provider |
+| Expected results are data, not exceptions | Tools, as in section 5 |
+
+**Rationale**: The classes derive from `Exception` because Python's `BaseException` also covers `KeyboardInterrupt` and
+`SystemExit`. A catch-all has to stay at the boundary, because the contract lets an agent raise anything, and without it the
+customer would get a crash instead of the friendly message.
+
+**Alternatives considered**: A larger hierarchy now, which would add classes nobody handles differently. More can be
+added when a caller needs to tell two failures apart. A separate branch later, which would mean reworking the agent code.
+
