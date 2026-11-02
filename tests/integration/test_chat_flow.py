@@ -125,6 +125,17 @@ def test_shortened_edit_is_sent(open_app, recording_agent):
     assert len(app.text_area) == 0
 
 
+def test_blank_edit_closes_the_panel(open_app, recording_agent):
+    app = send(open_app(), "a" * (MAX_MESSAGE_LENGTH + 1))
+
+    app.text_area[0].set_value("   ")
+    app.button(key="send_draft").click().run()
+
+    assert recording_agent.calls == []
+    assert len(app.error) == 0
+    assert len(app.text_area) == 0
+
+
 def test_discard_closes_the_panel(open_app, recording_agent):
     app = send(open_app(), "a" * (MAX_MESSAGE_LENGTH + 1))
 

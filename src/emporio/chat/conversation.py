@@ -1,3 +1,4 @@
+import logging
 import threading
 import time
 import uuid
@@ -6,7 +7,10 @@ from dataclasses import dataclass, field, replace
 from typing import Literal
 
 from emporio.agent.contract import Agent, AgentReply, ReplyDetails, is_valid_details
+from emporio.errors import EmporioError
 from emporio.safety.sanitize import Sanitizer
+
+logger = logging.getLogger(__name__)
 
 MAX_MESSAGE_LENGTH = 2000
 WAIT_TICK_SECONDS = 0.1
@@ -58,6 +62,14 @@ def submit(conversation: Conversation, text: str) -> SubmitResult:
     return "accepted"
 
 
+def submit_edit(conversation: Conversation, text: str) -> SubmitResult:
+    """Clearing the text in the long-message panel means giving up on it, unlike a blank chat input."""
+    result = submit(conversation, text)
+    if result == "blank":
+        conversation.rejected_draft = None
+    return result
+
+
 class _PendingCall:
     """Outlives a Streamlit rerun, so a rerun resumes instead of calling again."""
 
@@ -68,7 +80,9 @@ class _PendingCall:
         def call() -> None:
             try:
                 self._results.append(("ok", agent.respond(conversation_id, message)))
-            except Exception as error:
+            except EmporioError as error:
+                self._results.append(("failed", error))
+            except Exception as error:  # noqa: BLE001 - the contract lets an agent raise anything
                 self._results.append(("failed", error))
 
         # A daemon thread, because a running call cannot be interrupted.
@@ -86,7 +100,9 @@ class _PendingCall:
             if on_wait is not None:
                 on_wait(self.elapsed_seconds())
             self._thread.join(min(WAIT_TICK_SECONDS, remaining))
-        return self._results[0] if self._results else ("timed_out", None)
+        if self._results:
+            return self._results[0]
+        return ("timed_out", None) if self._thread.is_alive() else ("failed", None)
 
 
 def _is_usable(reply: object) -> bool:
@@ -98,7 +114,20 @@ def _describe_failure(outcome: Outcome, result: object) -> str:
         return "The agent timed out before replying."
     if isinstance(result, Exception):
         return f"{type(result).__name__}: {result}"
+    if result is None:
+        return "The agent call ended with no result."
     return "The agent returned a blank or invalid reply."
+
+
+def _log_failure(outcome: Outcome, result: object, sanitizer: Sanitizer) -> None:
+    if outcome == "timed_out":
+        logger.warning(_describe_failure(outcome, result))
+    elif isinstance(result, EmporioError):
+        logger.error("Agent failure: %s", sanitizer.text(_describe_failure(outcome, result)))
+    elif isinstance(result, Exception):
+        logger.error("Unexpected agent failure:\n%s", sanitizer.exception(result))
+    else:
+        logger.error(_describe_failure(outcome, result))
 
 
 def _build_details(outcome: Outcome, result: object, sanitizer: Sanitizer) -> tuple[ReplyDetails | None, DetailsState]:
@@ -114,7 +143,8 @@ def _build_details(outcome: Outcome, result: object, sanitizer: Sanitizer) -> tu
         if details is None:
             return None, "unavailable"
         return sanitizer.clean(details), "complete" if details.complete else "incomplete"
-    except Exception:
+    except Exception as error:  # noqa: BLE001 - bad details must not block the answer
+        logger.error("Reply details became unavailable:\n%s", sanitizer.exception(error))
         return None, "unavailable"
 
 
@@ -137,6 +167,8 @@ def answer_pending(
 
     if outcome == "ok" and not _is_usable(result):
         outcome = "failed"
+    if outcome != "ok":
+        _log_failure(outcome, result, sanitizer)
     turn.outcome = outcome
     turn.answer = sanitizer.text(result.answer) if outcome == "ok" else FAILURE_ANSWER
     if keep_details:

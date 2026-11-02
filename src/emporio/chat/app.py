@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 
 import streamlit as st
@@ -10,6 +11,7 @@ from emporio.chat.conversation import (
     answer_pending,
     new_conversation,
     submit,
+    submit_edit,
 )
 from emporio.chat.details_view import render_details
 from emporio.chat.utils import waiting_message
@@ -85,7 +87,7 @@ def render_rejected_draft(conversation: Conversation) -> None:
     edited = st.text_area("Edite sua mensagem", value=draft, height=200, key=f"draft_{hash(draft)}")
     send_column, discard_column = st.columns(2)
     if send_column.button("Enviar", key="send_draft", type="primary"):
-        submit(conversation, edited)
+        submit_edit(conversation, edited)
         st.rerun()
     if discard_column.button("Descartar", key="discard_draft"):
         conversation.rejected_draft = None
@@ -118,6 +120,7 @@ def answer_waiting_turn(conversation: Conversation, runtime: Runtime) -> None:
 
 def main() -> None:
     st.set_page_config(page_title="Empório da Música")
+    logging.basicConfig(level=logging.WARNING, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     try:
         runtime = load_runtime()
     except ConfigError as error:

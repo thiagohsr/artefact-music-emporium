@@ -9,6 +9,7 @@ from emporio.chat.conversation import (
     answer_pending,
     new_conversation,
     submit,
+    submit_edit,
 )
 from emporio.safety.sanitize import REDACTED, Sanitizer
 
@@ -324,3 +325,21 @@ def test_resumed_wait_keeps_counting_from_the_first_call():
 
     assert turn.outcome == "timed_out"
     assert turn.elapsed_ms >= 100
+
+
+def test_blank_edit_closes_the_panel():
+    conversation = new_conversation()
+    submit(conversation, "a" * (MAX_MESSAGE_LENGTH + 1))
+
+    assert submit_edit(conversation, "   ") == "blank"
+    assert conversation.rejected_draft is None
+    assert conversation.turns == []
+
+
+def test_edit_with_text_works_like_a_message():
+    conversation = new_conversation()
+    submit(conversation, "a" * (MAX_MESSAGE_LENGTH + 1))
+
+    assert submit_edit(conversation, "curta") == "accepted"
+    assert conversation.turns[0].message == "curta"
+

@@ -5,6 +5,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 from pydantic_ai import Tool
+from pydantic_ai.exceptions import ModelAPIError
 from pydantic_ai.messages import (
     ModelResponse,
     TextPart,
@@ -12,10 +13,12 @@ from pydantic_ai.messages import (
     ToolReturnPart,
     UserPromptPart,
 )
+from pydantic_ai.models.fallback import FallbackModel
 from pydantic_ai.models.function import FunctionModel
 
 from emporio.agent.store.agent import TOOLS, StoreAgent, clean_answer
 from emporio.data.conversation_store import SessionStore
+from emporio.errors import ProviderError
 
 
 def user_texts(messages):
@@ -160,4 +163,37 @@ def test_payment_terms_requires_the_number_of_installments():
 )
 def test_clean_answer_removes_tool_calls_written_as_text(answer, cleaned):
     assert clean_answer(answer) == cleaned
+
+
+def _failing(_messages, _info):
+    raise ModelAPIError("primary", "server down")
+
+
+def test_failing_primary_falls_back_and_the_details_say_so():
+    primary = FunctionModel(_failing, model_name="primary")
+    backup = FunctionModel(echo_history, model_name="backup")
+    agent = StoreAgent(
+        FallbackModel(primary, backup),
+        primary_model="primary",
+        settings={},
+        reply_timeout_seconds=30,
+    )
+
+    reply = agent.respond("c1", "oi")
+
+    assert reply.answer == "oi"
+    assert reply.details.fallback_used is True
+    assert reply.details.model == "backup"
+
+
+@pytest.mark.parametrize("wrap", [False, True])
+def test_failure_on_every_provider_raises_provider_error(wrap):
+    primary = FunctionModel(_failing, model_name="primary")
+    model = FallbackModel(primary, FunctionModel(_failing, model_name="backup")) if wrap else primary
+    agent = StoreAgent(model, primary_model="primary", settings={}, reply_timeout_seconds=30)
+
+    with pytest.raises(ProviderError) as error:
+        agent.respond("c1", "oi")
+
+    assert error.value.__cause__ is not None
 
