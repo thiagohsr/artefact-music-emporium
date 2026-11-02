@@ -28,7 +28,7 @@ def test_correct_details_return_the_order(conn):
 
     assert result["verified"] is True
     assert result["status"] == "delivered"
-    assert result["order_date"] == "2025-10-15"
+    assert "2025-10-15" not in str(result)
     assert result["total_brl"] > 0
     assert result["payment_method"]
     assert result["items"][0]["quantity"] >= 1

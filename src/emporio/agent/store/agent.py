@@ -176,7 +176,9 @@ TOOLS = (
             "rastreamento (como BRAB1234567BR). Exige também o telefone e o e-mail informados pelo cliente nesta "
             "conversa: nunca invente nem complete esses dados, peça o que faltar. Status: pending "
             "(pendente), confirmed (confirmado), shipped (enviado), delivered (entregue), cancelled (cancelado). "
-            "days_since_estimate conta os dias desde a previsão de entrega, porque não há data real de entrega."
+            "estimated_delivery é a previsão de entrega, a única data de entrega conhecida: não há data real de "
+            "entrega, então nunca diga em que dia o pedido foi entregue. "
+            "days_since_estimate conta os dias desde essa previsão."
         ),
     ),
     Tool(
