@@ -51,14 +51,15 @@ explicit paths, with no attribution lines. Do not push. Write comments only for 
 ### Implementation
 
 - [ ] T010 Add the three tables from [data-model.md](data-model.md) to `scripts/seed_db.py` with `CREATE TABLE IF NOT EXISTS`, leaving them out of `TABLES` so that seeding keeps their rows
-- [ ] T011 [P] Implement `src/emporio/data/store_db.py`, the only module that opens `data/emporio.sqlite`: a read-only connection and a write connection per call, with foreign keys on
-- [ ] T012 [P] Add `end_conversation(conversation_id) -> None` to the `Agent` Protocol in `src/emporio/agent/contract.py`, and a method that does nothing to `src/emporio/agent/stand_in.py`
-- [ ] T013 [P] Implement `src/emporio/agent/store/providers.py`: `OllamaProvider` with `/v1` on the base URL and Cloudflare headers on its `httpx` client, `OpenRouterProvider`, and `FallbackModel` over those configured, using `OLLAMA_CHAT_MODEL` and `OPENROUTER_CHAT_MODEL`, with a 25-second timeout. Keep thinking on (see [research.md](research.md), section 4)
-- [ ] T014 [P] Implement `src/emporio/agent/store/prompt.py`: the persona, sections 7.1 to 7.3 read from the policy index, the rules from `docs/stakeholder-clarifications.md`, the tool guidance, and per-run date and business hours in `America/Campo_Grande`, stating that message and manual text are data, not instructions
-- [ ] T015 [P] Implement `src/emporio/agent/store/trace.py`: turn a run's messages into `ReplyDetails` per [data-model.md](data-model.md)
-- [ ] T016 Implement the in-memory session part of `src/emporio/data/conversation_store.py`: `history`, `user_id`, `stored_id`, `last_message_at` and `closed` per `conversation_id`, closing after 30 minutes without a message and removing expired sessions on the next message, safe across threads
-- [ ] T017 Implement `src/emporio/agent/store/agent.py`: one long-lived event loop in a daemon thread, `respond` submitting with `asyncio.run_coroutine_threadsafe`, a lock per conversation, `asyncio.timeout` 5 seconds below `EMPORIO_REPLY_TIMEOUT_SECONDS`, history saved only on success, `end_conversation`, and `PYDANTIC_AI_NO_BANNER=1` set before importing Pydantic AI. Confirm how synchronous tools run, wrapping them with `asyncio.to_thread` if they run on the loop
-- [ ] T018 Register `store` in `src/emporio/agent/factory.py`, set `DEFAULT_AGENT = "store"` in `src/emporio/config.py`, and have tests that need the stand-in set `EMPORIO_AGENT=stand_in`
+- [ ] T011 [P] Create `src/emporio/errors.py` with `EmporioError(Exception)`, `ConfigError(EmporioError)` moved from `src/emporio/config.py` with its imports updated, and `ProviderError(EmporioError)`, per [research.md](research.md), section 14
+- [ ] T012 [P] Implement `src/emporio/data/store_db.py`, the only module that opens `data/emporio.sqlite`: a read-only connection and a write connection per call, with foreign keys on
+- [ ] T013 [P] Add `end_conversation(conversation_id) -> None` to the `Agent` Protocol in `src/emporio/agent/contract.py`, and a method that does nothing to `src/emporio/agent/stand_in.py`
+- [ ] T014 [P] Implement `src/emporio/agent/store/providers.py`: `OllamaProvider` with `/v1` on the base URL and Cloudflare headers on its `httpx` client, `OpenRouterProvider`, and `FallbackModel` over those configured, using `OLLAMA_CHAT_MODEL` and `OPENROUTER_CHAT_MODEL`, with a 25-second timeout. Keep thinking on (see [research.md](research.md), section 4)
+- [ ] T015 [P] Implement `src/emporio/agent/store/prompt.py`: the persona, sections 7.1 to 7.3 read from the policy index, the rules from `docs/stakeholder-clarifications.md`, the tool guidance, and per-run date and business hours in `America/Campo_Grande`, stating that message and manual text are data, not instructions
+- [ ] T016 [P] Implement `src/emporio/agent/store/trace.py`: turn a run's messages into `ReplyDetails` per [data-model.md](data-model.md)
+- [ ] T017 Implement the in-memory session part of `src/emporio/data/conversation_store.py`: `history`, `user_id`, `stored_id`, `last_message_at` and `closed` per `conversation_id`, closing after 30 minutes without a message and removing expired sessions on the next message, safe across threads
+- [ ] T018 Implement `src/emporio/agent/store/agent.py`: one long-lived event loop in a daemon thread, `respond` submitting with `asyncio.run_coroutine_threadsafe`, a lock per conversation, `asyncio.timeout` 5 seconds below `EMPORIO_REPLY_TIMEOUT_SECONDS`, history saved only on success, `end_conversation`, raising `ProviderError` with `from error` when no provider answers, and `PYDANTIC_AI_NO_BANNER=1` set before importing Pydantic AI. Confirm how synchronous tools run, wrapping them with `asyncio.to_thread` if they run on the loop
+- [ ] T019 Register `store` in `src/emporio/agent/factory.py`, set `DEFAULT_AGENT = "store"` in `src/emporio/config.py`, and have tests that need the stand-in set `EMPORIO_AGENT=stand_in`
 
 **Checkpoint**: `make test` passes, and with a provider `make run` answers a greeting through the real model.
 
@@ -74,20 +75,20 @@ explicit paths, with no attribution lines. Do not push. Write comments only for 
 
 > **NOTE: Write these tests first and confirm they fail before implementation.**
 
-- [ ] T019 [P] [US1] Write tests in `tests/unit/test_catalog.py`: `search_products` by text, category, `min_price_brl`, `max_price_brl`, either limit alone and both, with limits inclusive and compared with the final price under an active promotion; `in_stock_only`; a maximum of 10 results; discontinued products left out; `get_product` for one match, close matches and not found as data; a promotion included only when active, with original price, discount percentage and final price; and `coming_soon` reported as not yet available whatever its stock says
-- [ ] T020 [P] [US1] Write tests in `tests/unit/test_payments.py`: `pix` takes 5% off the list price and nothing off a promotional price; `debit` and `boleto` at the price; R$ 500 in 10x not allowed with `below_minimum`; the boundary at R$ 50, R$ 80 and R$ 100 per tier; 13x not allowed with `too_many_installments`; `product_name` or `amount_brl` accepted; and money handled with `Decimal`
-- [ ] T021 [P] [US1] Write tests in `tests/unit/test_policy_tool.py`: `policy_lookup` returns up to 3 customer sections with numbers, never sections 7, 7.1, 7.2, 7.3 or 10 (FR-023), and falls back to keywords when embedding fails or the embedding model isn't compatible
-- [ ] T022 [P] [US1] Write tests in `tests/unit/test_complaints.py`: `register_complaint` stores a masked summary with the time, and returns the 24 business hours return time; and `finish_conversation` closes the session
+- [ ] T020 [P] [US1] Write tests in `tests/unit/test_catalog.py`: `search_products` by text, category, `min_price_brl`, `max_price_brl`, either limit alone and both, with limits inclusive and compared with the final price under an active promotion; `in_stock_only`; a maximum of 10 results; discontinued products left out; `get_product` for one match, close matches and not found as data; a promotion included only when active, with original price, discount percentage and final price; and `coming_soon` reported as not yet available whatever its stock says
+- [ ] T021 [P] [US1] Write tests in `tests/unit/test_payments.py`: `pix` takes 5% off the list price and nothing off a promotional price; `debit` and `boleto` at the price; R$ 500 in 10x not allowed with `below_minimum`; the boundary at R$ 50, R$ 80 and R$ 100 per tier; 13x not allowed with `too_many_installments`; `product_name` or `amount_brl` accepted; and money handled with `Decimal`
+- [ ] T022 [P] [US1] Write tests in `tests/unit/test_policy_tool.py`: `policy_lookup` returns up to 3 customer sections with numbers, never sections 7, 7.1, 7.2, 7.3 or 10 (FR-023), and falls back to keywords when embedding fails or the embedding model isn't compatible
+- [ ] T023 [P] [US1] Write tests in `tests/unit/test_complaints.py`: `register_complaint` stores a masked summary with the time, and returns the 24 business hours return time; and `finish_conversation` closes the session
 
 ### Implementation for User Story 1
 
-- [ ] T023 [P] [US1] Implement `search_products` and `get_product` in `src/emporio/tools/catalog.py` per [contracts/agent-tools.md](contracts/agent-tools.md)
-- [ ] T024 [P] [US1] Implement `payment_terms` in `src/emporio/tools/payments.py` per [contracts/agent-tools.md](contracts/agent-tools.md)
-- [ ] T025 [P] [US1] Implement `policy_lookup` in `src/emporio/tools/policies.py` using `src/emporio/data/policy_index.py`, with a short embedding timeout, and vectors only when `is_compatible` passes
-- [ ] T026 [P] [US1] Implement the shared masking in `src/emporio/data/conversation_store.py` (emails and phone-shaped text, plus exact known values), and `register_complaint` in `src/emporio/tools/complaints.py` using it
-- [ ] T027 [US1] Implement `finish_conversation` in `src/emporio/tools/conversations.py`
-- [ ] T028 [US1] Register the tools from T023 to T027 in `src/emporio/agent/store/agent.py`, with descriptions saying when to use each, as in the spec's Agent Tools table (FR-022)
-- [ ] T029 [US1] Create `scripts/check_agent.py`: run the brief's questions, an installment question and each special situation in User Story 1 on the real model, checking the tools called and the expected values, printing each question's result and time, and exiting non-zero on failure
+- [ ] T024 [P] [US1] Implement `search_products` and `get_product` in `src/emporio/tools/catalog.py` per [contracts/agent-tools.md](contracts/agent-tools.md)
+- [ ] T025 [P] [US1] Implement `payment_terms` in `src/emporio/tools/payments.py` per [contracts/agent-tools.md](contracts/agent-tools.md)
+- [ ] T026 [P] [US1] Implement `policy_lookup` in `src/emporio/tools/policies.py` using `src/emporio/data/policy_index.py`, with a short embedding timeout, and vectors only when `is_compatible` passes
+- [ ] T027 [P] [US1] Implement the shared masking in `src/emporio/data/conversation_store.py` (emails and phone-shaped text, plus exact known values), and `register_complaint` in `src/emporio/tools/complaints.py` using it
+- [ ] T028 [US1] Implement `finish_conversation` in `src/emporio/tools/conversations.py`
+- [ ] T029 [US1] Register the tools from T024 to T028 in `src/emporio/agent/store/agent.py`, with descriptions saying when to use each, as in the spec's Agent Tools table (FR-022)
+- [ ] T030 [US1] Create `scripts/check_agent.py`: run the brief's questions, an installment question and each special situation in User Story 1 on the real model, checking the tools called and the expected values, printing each question's result and time, and exiting non-zero on failure
 
 **Checkpoint**: `make test` passes, and `make agent-check` passes for this story on the real model. This is the MVP.
 
@@ -103,13 +104,13 @@ explicit paths, with no attribution lines. Do not push. Write comments only for 
 
 > **NOTE: Write these tests first and confirm they fail before implementation.**
 
-- [ ] T030 [US2] Write tests in `tests/unit/test_orders.py`: success returns status, order date, stored total, payment method, items, tracking code, delivery estimate and days since that estimate; phones compare by digits and emails ignore case; a wrong phone, a wrong email and an unknown order give identical results; customers 11 and 43, who share an email, can't reach each other's orders; the stored total is never recalculated (orders 3 and 20); success records the customer in the session, and failure records nothing
+- [ ] T031 [US2] Write tests in `tests/unit/test_orders.py`: success returns status, order date, stored total, payment method, items, tracking code, delivery estimate and days since that estimate; phones compare by digits and emails ignore case; a wrong phone, a wrong email and an unknown order give identical results; customers 11 and 43, who share an email, can't reach each other's orders; the stored total is never recalculated (orders 3 and 20); success records the customer in the session, and failure records nothing
 
 ### Implementation for User Story 2
 
-- [ ] T031 [US2] Implement `get_order_status` in `src/emporio/tools/orders.py` per [contracts/agent-tools.md](contracts/agent-tools.md), recording the customer in the session from the check and never from a model value (FR-024), and register it in `src/emporio/agent/store/agent.py`
-- [ ] T032 [P] [US2] Update `docs/corner-cases/store-data.md` to require both the email and the phone
-- [ ] T033 [US2] Add the order questions to `scripts/check_agent.py`: with correct details, with each missing and wrong, and "Me arrependi da minha compra, posso devolver meu pedido?" with a verified customer
+- [ ] T032 [US2] Implement `get_order_status` in `src/emporio/tools/orders.py` per [contracts/agent-tools.md](contracts/agent-tools.md), recording the customer in the session from the check and never from a model value (FR-024), and register it in `src/emporio/agent/store/agent.py`
+- [ ] T033 [P] [US2] Update `docs/corner-cases/store-data.md` to require both the email and the phone
+- [ ] T034 [US2] Add the order questions to `scripts/check_agent.py`: with correct details, with each missing and wrong, and "Me arrependi da minha compra, posso devolver meu pedido?" with a verified customer
 
 **Checkpoint**: Stories 1 and 2 pass `make test` and `make agent-check`.
 
@@ -125,14 +126,14 @@ explicit paths, with no attribution lines. Do not push. Write comments only for 
 
 > **NOTE: Write these tests first and confirm they fail before implementation.**
 
-- [ ] T034 [P] [US3] Write tests in `tests/unit/test_conversation_store.py`: nothing is stored before identification; on identification, the session's earlier messages are stored, masked, with no thinking parts and no readable name, phone or email, including in tool arguments and results (SC-004); a customer has one user ID and at most one open conversation, with the most recent winning; 30 minutes without a message closes it; a closed conversation stays stored and can't be continued; and a second customer passing the check closes the first customer's conversation and clears the history
-- [ ] T035 [P] [US3] Write `AppTest` flows in `tests/integration/test_new_conversation.py`: "Nova conversa" opens a modal in Portuguese; Cancel changes nothing; Confirm calls `end_conversation`, clears the messages and changes the identifier. Update the existing test in `tests/integration/test_chat_flow.py` that clicks the button
+- [ ] T035 [P] [US3] Write tests in `tests/unit/test_conversation_store.py`: nothing is stored before identification; on identification, the session's earlier messages are stored, masked, with no thinking parts and no readable name, phone or email, including in tool arguments and results (SC-004); a customer has one user ID and at most one open conversation, with the most recent winning; 30 minutes without a message closes it; a closed conversation stays stored and can't be continued; and a second customer passing the check closes the first customer's conversation and clears the history
+- [ ] T036 [P] [US3] Write `AppTest` flows in `tests/integration/test_new_conversation.py`: "Nova conversa" opens a modal in Portuguese; Cancel changes nothing; Confirm calls `end_conversation`, clears the messages and changes the identifier. Update the existing test in `tests/integration/test_chat_flow.py` that clicks the button
 
 ### Implementation for User Story 3
 
-- [ ] T036 [US3] Add the stored conversation functions to `src/emporio/data/conversation_store.py` per [data-model.md](data-model.md): user IDs in `customer_identities`, saving after each successful run once identified, finding the open conversation, and closing
-- [ ] T037 [US3] Implement `find_open_conversation` in `src/emporio/tools/conversations.py`, taking the customer from the session and returning the masked transcript, and register it in `src/emporio/agent/store/agent.py`. Connect `finish_conversation`, `end_conversation` and the 30-minute limit to closing the stored conversation (FR-014)
-- [ ] T038 [US3] Add the confirmation modal to `src/emporio/chat/app.py` with `st.dialog`, calling `end_conversation` on the agent on Confirm, per [contracts/chat-changes.md](contracts/chat-changes.md)
+- [ ] T037 [US3] Add the stored conversation functions to `src/emporio/data/conversation_store.py` per [data-model.md](data-model.md): user IDs in `customer_identities`, saving after each successful run once identified, finding the open conversation, and closing
+- [ ] T038 [US3] Implement `find_open_conversation` in `src/emporio/tools/conversations.py`, taking the customer from the session and returning the masked transcript, and register it in `src/emporio/agent/store/agent.py`. Connect `finish_conversation`, `end_conversation` and the 30-minute limit to closing the stored conversation (FR-014)
+- [ ] T039 [US3] Add the confirmation modal to `src/emporio/chat/app.py` with `st.dialog`, calling `end_conversation` on the agent on Confirm, per [contracts/chat-changes.md](contracts/chat-changes.md)
 
 **Checkpoint**: Stories 1 to 3 pass `make test`, and a reload continues a verified conversation in the chat.
 
@@ -148,19 +149,19 @@ explicit paths, with no attribution lines. Do not push. Write comments only for 
 
 > **NOTE: Write these tests first and confirm they fail before implementation.**
 
-- [ ] T039 [P] [US4] Write tests in `tests/unit/test_failure_logging.py` using `caplog`: an agent exception, a call that ends with no result, an agent that can't start and details that become unavailable are each logged with planted secrets removed, and the page content doesn't change. An agent raising `SystemExit` gives outcome `failed`, not `timed_out` (FR-017)
-- [ ] T040 [P] [US4] Extend `tests/unit/test_sanitize.py`: lists and numbers under sensitive names are removed; `total_tokens` is kept, and `access_token` and `token` still match (FR-018)
-- [ ] T041 [P] [US4] Extend `tests/contract/test_agent_interface.py`: `ReplyDetails(errors="boom")` is invalid, and likewise a text in place of steps or sources (FR-019)
-- [ ] T042 [P] [US4] Add to `tests/unit/test_conversation.py` and `tests/integration/test_chat_flow.py`: sending a blank edit from the long-message panel closes it (FR-020)
-- [ ] T043 [P] [US4] Add to `tests/unit/test_store_agent.py`: a failing primary falls back, and the reply details say so; failure on every provider raises, so the customer gets the friendly message
+- [ ] T040 [P] [US4] Write tests in `tests/unit/test_failure_logging.py` using `caplog`: an agent exception, a call that ends with no result, an agent that can't start and details that become unavailable are each logged with planted secrets removed, and the page content doesn't change. An agent raising `SystemExit` gives outcome `failed`, not `timed_out` (FR-017)
+- [ ] T041 [P] [US4] Extend `tests/unit/test_sanitize.py`: lists and numbers under sensitive names are removed; `total_tokens` is kept, and `access_token` and `token` still match (FR-018)
+- [ ] T042 [P] [US4] Extend `tests/contract/test_agent_interface.py`: `ReplyDetails(errors="boom")` is invalid, and likewise a text in place of steps or sources (FR-019)
+- [ ] T043 [P] [US4] Add to `tests/unit/test_conversation.py` and `tests/integration/test_chat_flow.py`: sending a blank edit from the long-message panel closes it (FR-020)
+- [ ] T044 [P] [US4] Add to `tests/unit/test_store_agent.py`: a failing primary falls back, and the reply details say so; failure on every provider raises `ProviderError`, so the customer gets the friendly message
 
 ### Implementation for User Story 4
 
-- [ ] T044 [P] [US4] Update `src/emporio/safety/sanitize.py`: any non-empty value under a sensitive name is removed, using `token(?!s)`, and add a function that sanitizes an exception's text and traceback for logging
-- [ ] T045 [P] [US4] Update `is_valid_details` in `src/emporio/agent/contract.py` to require lists or tuples for steps, sources and errors
-- [ ] T046 [US4] Update `src/emporio/chat/conversation.py`: log failures after the sanitizer, report a call that ended with no result as `failed`, log why details became unavailable, and close the panel on a blank edit
-- [ ] T047 [US4] Log the sanitized cause in `create_agent` in `src/emporio/agent/factory.py`, keeping `from None` so the page shows no detail, and configure `logging` to the terminal in `src/emporio/chat/app.py`
-- [ ] T048 [US4] Press Streamlit's Stop during a wait in a real browser, record what happens in [research.md](research.md), and if the page stays unusable, fix it in `src/emporio/chat/app.py` with a test (FR-021)
+- [ ] T045 [P] [US4] Update `src/emporio/safety/sanitize.py`: any non-empty value under a sensitive name is removed, using `token(?!s)`, and add a function that sanitizes an exception's text and traceback for logging
+- [ ] T046 [P] [US4] Update `is_valid_details` in `src/emporio/agent/contract.py` to require lists or tuples for steps, sources and errors
+- [ ] T047 [US4] Update `src/emporio/chat/conversation.py` per [research.md](research.md), section 14: handle `EmporioError` by type, keep a logged catch-all only at the agent boundary with `# noqa: BLE001` and its reason, log failures after the sanitizer, report a call that ended with no result as `failed`, log why details became unavailable, and close the panel on a blank edit
+- [ ] T048 [US4] Log the sanitized cause in `create_agent` in `src/emporio/agent/factory.py`, with the same `# noqa: BLE001` and reason on its catch-all, keeping `from None` so the page shows no detail, and configure `logging` to the terminal in `src/emporio/chat/app.py`
+- [ ] T049 [US4] Press Streamlit's Stop during a wait in a real browser, record what happens in [research.md](research.md), and if the page stays unusable, fix it in `src/emporio/chat/app.py` with a test (FR-021)
 
 **Checkpoint**: All stories pass `make test` and `make agent-check`.
 
@@ -170,11 +171,11 @@ explicit paths, with no attribution lines. Do not push. Write comments only for 
 
 **Purpose**: Record the decisions and validate everything together.
 
-- [ ] T049 Update `README.md` with the decisions in [research.md](research.md), the store agent as the default, what a provider needs, and these limitations: masking can miss unusual formats, stored conversations are never deleted automatically despite manual section 9, complaints have no screen for the store's team yet, nothing limits repeated guesses at an order's phone and email, and a finished conversation stays on screen until the next message
-- [ ] T050 [P] Remove from `docs/pending-updates.md` what this feature completes, and update `docs/draft-check-list.md`
-- [ ] T051 [P] Note in `specs/001-streamlit-chat/quickstart.md` that its checks need `EMPORIO_AGENT=stand_in`
-- [ ] T052 Run `make test`, `make policy-check` and `make agent-check` on both providers, and record the eight-tool reply times in [research.md](research.md), against the 60-second limit
-- [ ] T053 Run every check in [quickstart.md](quickstart.md) in a real browser, and fix anything that fails in the file responsible
+- [ ] T050 Update `README.md` with the decisions in [research.md](research.md), the store agent as the default, what a provider needs, and these limitations: masking can miss unusual formats, stored conversations are never deleted automatically despite manual section 9, complaints have no screen for the store's team yet, nothing limits repeated guesses at an order's phone and email, and a finished conversation stays on screen until the next message
+- [ ] T051 [P] Remove from `docs/pending-updates.md` what this feature completes, and update `docs/draft-check-list.md`
+- [ ] T052 [P] Note in `specs/001-streamlit-chat/quickstart.md` that its checks need `EMPORIO_AGENT=stand_in`
+- [ ] T053 Run `make test`, `make policy-check` and `make agent-check` on both providers, and record the eight-tool reply times in [research.md](research.md), against the 60-second limit
+- [ ] T054 Run every check in [quickstart.md](quickstart.md) in a real browser, and fix anything that fails in the file responsible
 
 ---
 
@@ -185,23 +186,23 @@ explicit paths, with no attribution lines. Do not push. Write comments only for 
 - **Setup (Phase 1)**: No dependencies.
 - **Foundational (Phase 2)**: Depends on Setup and blocks all user stories.
 - **User Story 1 (Phase 3)**: Depends on Foundational.
-- **User Story 2 (Phase 4)**: Depends on Foundational. T033 extends the script from T029.
+- **User Story 2 (Phase 4)**: Depends on Foundational. T034 extends the script from T030.
 - **User Story 3 (Phase 5)**: Depends on User Story 1 for masking and `finish_conversation`, and User Story 2 for identification.
-- **User Story 4 (Phase 6)**: Depends on Foundational. T043 needs the agent, and T046 and T047 only touch existing code.
+- **User Story 4 (Phase 6)**: Depends on Foundational. T044 needs the agent, and T047 and T048 only touch existing code.
 - **Polish (Phase 7)**: Depends on all user stories.
 
 ### Within Each User Story
 
 - Tests are written first and fail before implementation.
 - Tools come before their registration in `agent.py`.
-- Tasks that share a file run in order: `agent.py` in T017, T028, T031 and T037, `conversation_store.py` in T016, T026 and T036, and `app.py` in T038, T047 and T048.
+- Tasks that share a file run in order: `agent.py` in T018, T029, T032 and T038, `conversation_store.py` in T017, T027 and T037, and `app.py` in T039, T048 and T049.
 
 ### Parallel Opportunities
 
 - Setup: T002 and T003.
-- Foundational tests: T004 to T008. Foundational implementation: T011 to T015.
-- User Story 1: tests T019 to T022, and tools T023 to T026.
-- User Story 4: tests T039 to T043, and T044 and T045.
+- Foundational tests: T004 to T008. Foundational implementation: T011 to T016.
+- User Story 1: tests T020 to T023, and tools T024 to T027.
+- User Story 4: tests T040 to T044, and T045 and T046.
 
 ## Parallel Example: User Story 1
 

@@ -71,6 +71,7 @@ specs/002-store-agent/
 
 ```text
 src/emporio/
+├── errors.py            # EmporioError, ConfigError, ProviderError
 ├── agent/
 │   ├── contract.py      # Adds end_conversation, stricter details validation
 │   ├── factory.py       # Registers the store agent as the default
