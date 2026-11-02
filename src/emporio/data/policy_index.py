@@ -33,13 +33,13 @@ def read_settings() -> dict[str, str]:
     return {**dotenv_values(find_dotenv(usecwd=True)), **os.environ}
 
 
-def _post(url: str, payload: dict, headers: Mapping[str, str]) -> dict:
+def _post(url: str, payload: dict, headers: Mapping[str, str], timeout_seconds: float) -> dict:
     request = urllib.request.Request(
         url,
         data=json.dumps(payload).encode(),
         headers={"Content-Type": "application/json", "User-Agent": "artefact-music-emporium", **headers},
     )
-    with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
+    with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
         return json.load(response)
 
 
@@ -51,7 +51,11 @@ def openrouter_embedding_model(settings: Mapping[str, str]) -> str:
     return settings.get("OPENROUTER_EMBEDDING_MODEL") or DEFAULT_OPENROUTER_EMBEDDING_MODEL
 
 
-def embed_with_ollama(texts: Sequence[str], settings: Mapping[str, str]) -> list[list[float]]:
+def embed_with_ollama(
+    texts: Sequence[str],
+    settings: Mapping[str, str],
+    timeout_seconds: float = REQUEST_TIMEOUT_SECONDS,
+) -> list[list[float]]:
     response = _post(
         f"{settings['OLLAMA_BASE_URL'].rstrip('/')}/api/embed",
         {"model": ollama_embedding_model(settings), "input": list(texts)},
@@ -59,15 +63,21 @@ def embed_with_ollama(texts: Sequence[str], settings: Mapping[str, str]) -> list
             "CF-Access-Client-Id": settings.get("CF_ACCESS_CLIENT_ID", ""),
             "CF-Access-Client-Secret": settings.get("CF_ACCESS_CLIENT_SECRET", ""),
         },
+        timeout_seconds,
     )
     return response["embeddings"]
 
 
-def embed_with_openrouter(texts: Sequence[str], settings: Mapping[str, str]) -> list[list[float]]:
+def embed_with_openrouter(
+    texts: Sequence[str],
+    settings: Mapping[str, str],
+    timeout_seconds: float = REQUEST_TIMEOUT_SECONDS,
+) -> list[list[float]]:
     response = _post(
         OPENROUTER_URL,
         {"model": openrouter_embedding_model(settings), "input": list(texts)},
         {"Authorization": f"Bearer {settings['OPENROUTER_API_KEY']}"},
+        timeout_seconds,
     )
     return [item["embedding"] for item in sorted(response["data"], key=lambda item: item["index"])]
 
