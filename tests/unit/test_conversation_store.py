@@ -168,7 +168,7 @@ def owner(conn, order_id):
 
 
 def scripted(call_order=None):
-    """Calls the order tool when a message starts with 'pedido', then finds the open conversation."""
+    """Calls the order tool when a message starts with 'pedido', then repeats any previous conversation."""
 
     def function(messages, _info):
         last_request = messages[-1].parts
@@ -177,10 +177,9 @@ def scripted(call_order=None):
         if text.startswith("pedido"):
             _, number, phone, email = text.split("|")
             return ModelResponse(parts=[ToolCallPart("get_order_status", {"order_number": number, "phone": phone, "email": email})])
-        if returned and returned[0].tool_name == "get_order_status" and returned[0].content.get("verified"):
-            return ModelResponse(parts=[ToolCallPart("find_open_conversation", {})])
-        if returned and returned[0].tool_name == "find_open_conversation":
-            return ModelResponse(parts=[TextPart(str(returned[0].content.get("transcript", "nada")))])
+        if returned and returned[0].tool_name == "get_order_status":
+            previous = returned[0].content.get("previous_conversation", {})
+            return ModelResponse(parts=[TextPart(str(previous.get("transcript", "nada")))])
         return ModelResponse(parts=[TextPart(f"eco {text}")])
 
     return FunctionModel(function)
@@ -228,6 +227,14 @@ def test_a_reload_continues_the_open_conversation_after_verifying_again(agent, c
 
     assert "algo importante" in reply.answer
     assert len(stored(conn)) == 1
+
+
+def test_the_tool_finds_nothing_more_once_the_order_check_found_it(agent, conn, store_db):
+    agent.respond("before-reload", order_message(conn, 1))
+    agent.respond("after-reload", order_message(conn, 1))
+    session = agent._sessions.get("after-reload")
+
+    assert find_open(conn, session.user_id, datetime.now(UTC), exclude=session.stored_id) is None
 
 
 def test_a_new_session_without_verifying_continues_nothing(agent, conn):

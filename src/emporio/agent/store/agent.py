@@ -88,16 +88,25 @@ def _policy_lookup(context: RunContext[Turn], question: str) -> dict[str, Any]:
 def _get_order_status(context: RunContext[Turn], order_number: str, phone: str, email: str) -> dict[str, Any]:
     with read_connection(context.deps.db_path) as conn:
         result, customer = get_order_status(conn, order_number, phone, email, context.deps.now.date())
-    if customer is not None:
-        _identify(context.deps, customer)
-        return {**result, "next_step": "Use find_open_conversation agora, antes de responder ao cliente."}
-    return result
+    if customer is None:
+        return result
+    _identify(context.deps, customer)
+    return {
+        **result,
+        "previous_conversation": _find_open_conversation(context),
+        "next_step": "Se o cliente perguntou sobre devolução ou troca, use policy_lookup antes de responder.",
+    }
 
 
 def clean_answer(answer: str) -> str:
     """The self-hosted model sometimes writes a tool call as text after already making it."""
     answer = re.sub(r"<function_call>.*?(</function_call>|$)", "", answer, flags=re.DOTALL)
-    return "\n".join(line for line in answer.splitlines() if line.strip(" `*") not in TOOL_NAMES).strip()
+    lines = [
+        line
+        for line in answer.splitlines()
+        if line.strip(" `*") not in TOOL_NAMES and '"arguments"' not in line and not _BARE_NAME.fullmatch(line.strip())
+    ]
+    return "\n".join(lines).strip()
 
 
 def _identify(turn: Turn, customer: VerifiedCustomer) -> None:
@@ -173,8 +182,8 @@ TOOLS = (
         _find_open_conversation,
         name="find_open_conversation",
         description=(
-            "Use logo depois de get_order_status verificar o cliente. Devolve a conversa anterior ainda aberta desse "
-            "cliente, se houver, para continuar de onde parou."
+            "Devolve a conversa anterior ainda aberta do cliente verificado, se houver. get_order_status já a inclui "
+            "em previous_conversation: continue dela, sem pedir ao cliente que repita o que já disse."
         ),
     ),
     Tool(
@@ -194,6 +203,7 @@ TOOLS = (
 
 
 TOOL_NAMES = {tool.name for tool in TOOLS}
+_BARE_NAME = re.compile(r"[a-z]+_[a-z_]+")
 
 
 class StoreAgent:

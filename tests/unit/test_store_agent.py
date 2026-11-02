@@ -155,6 +155,7 @@ def test_payment_terms_requires_the_number_of_installments():
         ('Até logo! <function_call> {"name": "finish_conversation"} </function_call>', "Até logo!"),
         ('Até logo! <function_call> {"name": "x"}', "Até logo!"),
         ("Use o get_product mais tarde", "Use o get_product mais tarde"),
+        ('registar_reclamacao\n{"name": "register_complaint", "arguments": {"summary": "x"}}', ""),
     ],
 )
 def test_clean_answer_removes_tool_calls_written_as_text(answer, cleaned):

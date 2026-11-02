@@ -100,9 +100,13 @@ def check_continuing(agent) -> bool:
     agent.respond(f"{run}-before", "Estou pensando em comprar um trombone de vara também")
     reply = agent.respond(f"{run}-after", verify)
     called = [step.name for step in reply.details.steps if step.kind != "reasoning"]
-    passed = "find_open_conversation" in called
-    print(f"{'PASS' if passed else 'FAIL'} continue after reload: {time.monotonic() - started:.1f}s, tools={called}")
-    return passed
+    order_results = [step.result for step in reply.details.steps if step.name == "get_order_status"]
+    found = any(result.get("previous_conversation", {}).get("found") for result in order_results)
+    remembered = re.search("trombone", reply.answer, re.IGNORECASE) is not None
+    label = "PASS" if found else "FAIL"
+    elapsed = time.monotonic() - started
+    print(f"{label} continue after reload: {elapsed:.1f}s, tools={called}, found={found}, mentioned_it={remembered}")
+    return found
 
 
 def run_check(agent, index: int, check: Check) -> bool:

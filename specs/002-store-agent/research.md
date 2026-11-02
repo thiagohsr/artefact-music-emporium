@@ -75,6 +75,10 @@ result.
 **Rationale**: **Verified** that history survives a JSON round trip and continues correctly. A tool can't replace the
 history of the run it's part of, so returning a transcript is the direct way to reach the earlier conversation.
 
+`get_order_status` also includes the open conversation in its result after a successful check. **Verified**: left to the
+model, `qwen3:8b` called `find_open_conversation` in only 1 of 5 runs, even when the verified result told it to.
+`find_open_conversation` stays as the tool that does the lookup.
+
 **System user ID**: A random ID in a table that maps it to `customer_id`, in the same database.
 
 **Limitation**: This is pseudonymization, not anonymization, because whoever has the database file can follow the
