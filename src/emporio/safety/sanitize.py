@@ -1,6 +1,7 @@
 import dataclasses
 import os
 import re
+import traceback
 from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import Any
@@ -10,7 +11,7 @@ from dotenv import dotenv_values, find_dotenv
 REDACTED = "[REMOVIDO]"
 MIN_PRIVATE_VALUE_LENGTH = 8
 
-_SENSITIVE_NAME = re.compile(r"(?i)api[_-]?key|secret|password|passwd|token|authorization|credential|client_id")
+_SENSITIVE_NAME = re.compile(r"(?i)api[_-]?key|secret|password|passwd|token(?!s)|authorization|credential|client_id")
 _NON_SECRET_NAME = re.compile(r"MODEL|^EMPORIO_")
 
 
@@ -22,6 +23,9 @@ class Sanitizer:
         for private_value in self._private_values:
             value = value.replace(private_value, REDACTED)
         return value
+
+    def exception(self, error: BaseException) -> str:
+        return self.text("".join(traceback.format_exception(error)))
 
     def clean(self, data: Any) -> Any:
         match data:
@@ -39,7 +43,7 @@ class Sanitizer:
                 return self.text(str(data))
 
     def _clean_item(self, key: Any, item: Any) -> Any:
-        if isinstance(item, str) and _SENSITIVE_NAME.search(str(key)):
+        if item not in (None, "") and _SENSITIVE_NAME.search(str(key)):
             return REDACTED
         return self.clean(item)
 

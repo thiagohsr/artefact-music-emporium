@@ -150,14 +150,14 @@ explicit paths, with no attribution lines. Do not push. Write comments only for 
 > **NOTE: Write these tests first and confirm they fail before implementation.**
 
 - [ ] T040 [P] [US4] Write tests in `tests/unit/test_failure_logging.py` using `caplog`: an agent exception, a call that ends with no result, an agent that can't start and details that become unavailable are each logged with planted secrets removed, and the page content doesn't change. An agent raising `SystemExit` gives outcome `failed`, not `timed_out` (FR-017)
-- [ ] T041 [P] [US4] Extend `tests/unit/test_sanitize.py`: lists and numbers under sensitive names are removed; `total_tokens` is kept, and `access_token` and `token` still match (FR-018)
+- [X] T041 [P] [US4] Extend `tests/unit/test_sanitize.py`: lists and numbers under sensitive names are removed; `total_tokens` is kept, and `access_token` and `token` still match (FR-018)
 - [ ] T042 [P] [US4] Extend `tests/contract/test_agent_interface.py`: `ReplyDetails(errors="boom")` is invalid, and likewise a text in place of steps or sources (FR-019)
 - [ ] T043 [P] [US4] Add to `tests/unit/test_conversation.py` and `tests/integration/test_chat_flow.py`: sending a blank edit from the long-message panel closes it (FR-020)
 - [ ] T044 [P] [US4] Add to `tests/unit/test_store_agent.py`: a failing primary falls back, and the reply details say so; failure on every provider raises `ProviderError`, so the customer gets the friendly message
 
 ### Implementation for User Story 4
 
-- [ ] T045 [P] [US4] Update `src/emporio/safety/sanitize.py`: any non-empty value under a sensitive name is removed, using `token(?!s)`, and add a function that sanitizes an exception's text and traceback for logging
+- [X] T045 [P] [US4] Update `src/emporio/safety/sanitize.py`: any non-empty value under a sensitive name is removed, using `token(?!s)`, and add a function that sanitizes an exception's text and traceback for logging
 - [ ] T046 [P] [US4] Update `is_valid_details` in `src/emporio/agent/contract.py` to require lists or tuples for steps, sources and errors
 - [ ] T047 [US4] Update `src/emporio/chat/conversation.py` per [research.md](research.md), section 14: handle `EmporioError` by type, keep a logged catch-all only at the agent boundary with `# noqa: BLE001` and its reason, log failures after the sanitizer, report a call that ended with no result as `failed`, log why details became unavailable, and close the panel on a blank edit
 - [ ] T048 [US4] Log the sanitized cause in `create_agent` in `src/emporio/agent/factory.py`, with the same `# noqa: BLE001` and reason on its catch-all, keeping `from None` so the page shows no detail, and configure `logging` to the terminal in `src/emporio/chat/app.py`
