@@ -143,3 +143,23 @@ def test_a_command_must_be_the_whole_first_word(agent):
 )
 def test_invalid_details_are_recognized(details):
     assert is_valid_details(details) is False
+
+
+def test_end_conversation_accepts_an_unknown_id(agent):
+    agent.end_conversation("unknown")
+
+
+def test_store_agent_follows_the_interface():
+    from pydantic_ai.models.test import TestModel
+
+    from emporio.agent.store.agent import StoreAgent
+
+    store = StoreAgent(TestModel(), primary_model="test", settings={}, reply_timeout_seconds=30)
+
+    assert store.is_simulated is False
+    assert store.name
+    reply = store.respond(CONVERSATION_ID, "Oi")
+    assert isinstance(reply, AgentReply)
+    assert is_valid_details(reply.details)
+    store.end_conversation("unknown")
+

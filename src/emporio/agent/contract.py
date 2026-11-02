@@ -46,6 +46,8 @@ class Agent(Protocol):
 
     def respond(self, conversation_id: str, message: str) -> AgentReply: ...
 
+    def end_conversation(self, conversation_id: str) -> None: ...
+
 
 def _is_valid_step(step: Any) -> bool:
     return (

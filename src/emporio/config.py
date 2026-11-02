@@ -7,7 +7,7 @@ from dotenv import find_dotenv, load_dotenv
 
 from emporio.errors import ConfigError
 
-DEFAULT_AGENT = "stand_in"
+DEFAULT_AGENT = "store"
 DEFAULT_REPLY_TIMEOUT_SECONDS = 60.0
 
 

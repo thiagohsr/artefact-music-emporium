@@ -12,7 +12,13 @@ def _create_stand_in(settings: Settings) -> Agent:
     return StandInAgent(slow_seconds=settings.reply_timeout_seconds + SLOW_REPLY_MARGIN_SECONDS)
 
 
-AGENTS: dict[str, Callable[[Settings], Agent]] = {"stand_in": _create_stand_in}
+def _create_store(settings: Settings) -> Agent:
+    from emporio.agent.store.agent import create_store_agent
+
+    return create_store_agent(settings.reply_timeout_seconds)
+
+
+AGENTS: dict[str, Callable[[Settings], Agent]] = {"stand_in": _create_stand_in, "store": _create_store}
 
 
 def create_agent(settings: Settings) -> Agent:

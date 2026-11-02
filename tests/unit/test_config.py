@@ -7,7 +7,7 @@ from emporio.errors import ConfigError
 
 
 def test_defaults():
-    assert load_settings({}) == Settings(agent="stand_in", troubleshooting=False, reply_timeout_seconds=60)
+    assert load_settings({}) == Settings(agent="store", troubleshooting=False, reply_timeout_seconds=60)
 
 
 def test_valid_values():
@@ -25,7 +25,7 @@ def test_valid_values():
 def test_blank_values_use_the_defaults():
     settings = load_settings({"EMPORIO_TROUBLESHOOTING": " ", "EMPORIO_REPLY_TIMEOUT_SECONDS": ""})
 
-    assert settings == Settings(agent="stand_in", troubleshooting=False, reply_timeout_seconds=60)
+    assert settings == Settings(agent="store", troubleshooting=False, reply_timeout_seconds=60)
 
 
 @pytest.mark.parametrize(
@@ -50,13 +50,13 @@ def test_invalid_values_name_the_setting_without_the_value(setting, value):
 
 
 def test_stand_in_is_selected_by_name():
-    agent = create_agent(load_settings({}))
+    agent = create_agent(load_settings({"EMPORIO_AGENT": "stand_in"}))
 
     assert isinstance(agent, StandInAgent)
 
 
 def test_stand_in_slow_reply_outlasts_the_reply_limit():
-    agent = create_agent(load_settings({"EMPORIO_REPLY_TIMEOUT_SECONDS": "2"}))
+    agent = create_agent(load_settings({"EMPORIO_AGENT": "stand_in", "EMPORIO_REPLY_TIMEOUT_SECONDS": "2"}))
 
     assert agent._slow_seconds > 2
 
@@ -80,3 +80,13 @@ def test_agent_that_cannot_start_is_a_configuration_error(monkeypatch):
 
     assert error.value.setting == "EMPORIO_AGENT"
     assert "planted-startup-detail" not in str(error.value)
+
+
+def test_store_agent_without_a_provider_is_a_configuration_error(monkeypatch):
+    monkeypatch.setattr("emporio.agent.store.agent.read_settings", lambda: {})
+
+    with pytest.raises(ConfigError) as error:
+        create_agent(Settings(agent="store", troubleshooting=False, reply_timeout_seconds=60))
+
+    assert error.value.setting == "EMPORIO_AGENT"
+
