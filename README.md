@@ -13,19 +13,21 @@ You need [uv](https://docs.astral.sh/uv/getting-started/installation/) and `make
 | `make run` | Starts the chat at <http://localhost:8501> |
 | `make run-dev` | Starts the chat with the troubleshooting view and crash details on |
 | `make test` | Runs the automated tests |
+| `make agent-check` | Asks the acceptance questions on the real model, and needs a provider |
 | `make policy-check` | Scores policy retrieval against 16 gold questions (needs an embedding provider) |
 | `make policy-index` | Rebuilds `data/policies.sqlite` from the PDF, only needed if the PDF or model changes |
 
-`make run`, `make run-dev` and `make test` run the setup themselves, so each one works on a fresh
-checkout.
+`make run`, `make run-dev` and `make test` run the setup themselves, and the two chat commands also prepare the store
+database.
 
 ### Settings
 
-The chat needs no settings to start. To change one, copy `.env.example` to `.env`.
+Copy `.env.example` to `.env`. The agent needs a model provider, and the quickest is OpenRouter: set
+`OPENROUTER_API_KEY` and leave the rest as they are. Without a provider, the page shows an error naming `EMPORIO_AGENT`.
 
 | Setting | Values | Default | Effect |
 |---|---|---|---|
-| `EMPORIO_AGENT` | `stand_in` | `stand_in` | The agent to use |
+| `EMPORIO_AGENT` | `store` or `stand_in` | `store` | The agent to use |
 | `EMPORIO_TROUBLESHOOTING` | `0` or `1` | `0` | Shows how each reply was produced |
 | `EMPORIO_REPLY_TIMEOUT_SECONDS` | Positive number | `60` | How long to wait for a reply |
 
@@ -40,9 +42,8 @@ published here.
 
 ### Stand-in agent
 
-The real agent isn't built yet, so the chat uses a stand-in agent that needs no model or store data. The
-page shows a notice that its replies are simulated. Start a message with one of these commands to
-simulate a situation:
+`EMPORIO_AGENT=stand_in make run` uses a simulated agent that needs no model or store data, and the page says its replies
+are simulated. Start a message with one of these commands to simulate a situation:
 
 | Command | Simulates |
 |---|---|
@@ -66,17 +67,34 @@ in [Stakeholder Clarifications](docs/stakeholder-clarifications.md). Issues in t
 
 ## Decisions
 
+- **One agent with typed tools:** Pydantic AI runs a plain tool loop over eight tools. Choosing the source is the brief's
+  core requirement, and in a loop a wrong first call is cheap, because the model reads the result and tries another. A
+  router with specialist agents is the documented next step if the evaluation shows the model picking the wrong tools,
+  following [OpenAI's guidance](https://cdn.openai.com/business-guides-and-resources/a-practical-guide-to-building-agents.pdf)
+  to maximize a single agent first, and [Anthropic's](https://www.anthropic.com/engineering/building-effective-agents) to add
+  complexity only when needed.
+- **Tools hold what must be exact:** lookups, payment math, the identity check and writes are plain Python, so they're
+  tested without a model. Real runs shaped them: `installments` is required because the model omitted it, and a successful
+  order check includes the open conversation because `qwen3:8b` called that tool in only 1 of 5 runs.
+- **Model and provider:** `qwen3:8b` on a self-hosted Ollama server first, and OpenRouter as the fallback, which is also what
+  an evaluator without access to the server uses. Thinking stays on: in one test, turning it off halved the time but
+  the reply stated a made-up price.
+- **Prompt strategy:** section 7 of the manual is read from the policy index into the instructions, so the store's own tone,
+  flow and special situations drive the agent. Around it are the rules that resolve the manual's contradictions, and the
+  computed date and business hours, so the model doesn't work them out.
+- **Conversation history:** conversations last for the session. Only customers who pass the order check get theirs stored,
+  in SQLite, held by a random user ID with names, phones and emails masked, so they can continue after a page reload.
+- **Exceptions:** a broad `except` stays only at real boundaries, logged, with its reason. Failures go to the terminal
+  with secrets removed, and customers only see the friendly message.
 - **Streamlit, called directly:** the chat calls the agent in the same process, with no API layer. This
   keeps the prototype to one command while the focus is on the agent and its evaluation. The agent
   doesn't depend on Streamlit, so it can be called from a script or test.
 - **One small agent interface:** the chat only knows `respond(conversation_id, message)`. Reply details
   are plain dataclasses with a generic list of steps, so they don't tie the chat to an agent framework.
-- **Stand-in agent:** it lets the chat and its failure paths be built and tested with no model or store
-  data. It's never used silently: the page shows a notice, and a real agent that fails to start shows an
-  error instead of falling back to it.
-- **Plain text only:** messages and replies are rendered with `st.text`, so text from customers or tools
-  can't change the page. This gives up lists and emphasis in replies, which can be revisited if the real
-  agent needs them.
+- **Stand-in agent:** it tests the chat and its failure paths with no model or store data. It's never used silently: the
+  page shows a notice, and an agent that fails to start shows an error instead of falling back to it.
+- **Plain text only:** messages and replies are rendered with `st.text`, so text from customers or tools can't change
+  the page. This gives up lists and emphasis in replies.
 - **Secrets removed in one place:** replies and details pass through the sanitizer as soon as the agent
   returns, before anything is stored, so no view can skip it. With troubleshooting off, details are
   discarded and never stored.
@@ -96,12 +114,24 @@ in [Stakeholder Clarifications](docs/stakeholder-clarifications.md). Issues in t
 
 ## Known Limitations
 
+- **Model reliability:** on `make agent-check`, three full runs scored 20, 22 and 21 of 22 on `qwen3:8b`, and 22, 21 and 21
+  on `gpt-4o-mini`. The misses vary, and include claiming a complaint was registered without calling the tool, and reading
+  the order date as the delivery date. No order was shared with wrong or missing details in any run. These are small samples.
+- **Guardrails are incomplete:** requests beyond accessories that are off-topic, and attempts to override the instructions,
+  aren't handled yet. An earlier draft agent failed such a test, and this one hasn't been hardened against it.
+- **Model text in the chat:** the models write Markdown, and plain-text rendering shows it literally, as `**asterisks**`.
+- **Stored conversations:** masking can miss unusual formats and other people's names. The user ID is pseudonymous, because a
+  table in the same file maps it to the customer. Nothing deletes stored conversations, although manual section 9 lets
+  customers ask for that. A different customer verifying in the middle of a session closes the first conversation, but that one
+  reply's model call still has the earlier history.
+- **Order check:** nothing limits repeated guesses at an order's phone and email.
+- **Return periods** count from the delivery estimate, because the data has no actual delivery date.
+- **Complaints** are recorded, but the store's team has no screen to read them.
+- **After closing:** when the agent finishes a conversation, the old messages stay on screen, and the next message starts fresh.
+- **Business hours** don't cover holidays, because the manual doesn't list them.
 - **Interface:** the chat runs in one process and is meant for local use and small demos. There's no
   login, so it binds to localhost. A real integration would need a separate API.
-- **Conversations aren't saved:** a conversation ends when the page is refreshed or closed.
-- **Timed-out calls keep running:** a running call can't be interrupted, so a call that times out continues
-  until it ends, and its result is discarded. The real agent should set timeouts on its own model and tool
-  calls.
+- **Page reload:** it ends the session, and a customer who wasn't verified loses that conversation.
 - **Secret removal only knows configured values:** it removes values from `.env` and sensitive
   environment variables, and anything under a sensitive key name. Another secret in free text, such as a
   third-party token in a tool's error message, isn't caught.
