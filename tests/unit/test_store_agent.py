@@ -14,7 +14,7 @@ from pydantic_ai.messages import (
 )
 from pydantic_ai.models.function import FunctionModel
 
-from emporio.agent.store.agent import TOOLS, StoreAgent
+from emporio.agent.store.agent import TOOLS, StoreAgent, clean_answer
 from emporio.data.conversation_store import SessionStore
 
 
@@ -145,4 +145,18 @@ def test_payment_terms_requires_the_number_of_installments():
 
     assert "installments" in schema["required"]
     assert "method" not in schema["required"]
+
+
+@pytest.mark.parametrize(
+    ("answer", "cleaned"),
+    [
+        ("Até logo!", "Até logo!"),
+        ("Até logo!\n\n finish_conversation", "Até logo!"),
+        ('Até logo! <function_call> {"name": "finish_conversation"} </function_call>', "Até logo!"),
+        ('Até logo! <function_call> {"name": "x"}', "Até logo!"),
+        ("Use o get_product mais tarde", "Use o get_product mais tarde"),
+    ],
+)
+def test_clean_answer_removes_tool_calls_written_as_text(answer, cleaned):
+    assert clean_answer(answer) == cleaned
 

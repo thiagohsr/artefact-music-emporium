@@ -1,5 +1,6 @@
 import asyncio
 import os
+import re
 import threading
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
@@ -89,7 +90,14 @@ def _get_order_status(context: RunContext[Turn], order_number: str, phone: str, 
         result, customer = get_order_status(conn, order_number, phone, email, context.deps.now.date())
     if customer is not None:
         _identify(context.deps, customer)
+        return {**result, "next_step": "Use find_open_conversation agora, antes de responder ao cliente."}
     return result
+
+
+def clean_answer(answer: str) -> str:
+    """The self-hosted model sometimes writes a tool call as text after already making it."""
+    answer = re.sub(r"<function_call>.*?(</function_call>|$)", "", answer, flags=re.DOTALL)
+    return "\n".join(line for line in answer.splitlines() if line.strip(" `*") not in TOOL_NAMES).strip()
 
 
 def _identify(turn: Turn, customer: VerifiedCustomer) -> None:
@@ -185,6 +193,9 @@ TOOLS = (
 )
 
 
+TOOL_NAMES = {tool.name for tool in TOOLS}
+
+
 class StoreAgent:
     name = "store"
     is_simulated = False
@@ -257,7 +268,7 @@ class StoreAgent:
             session.history_reset = False
             self._sessions.touch(session)
             self._store(session)
-        return AgentReply(result.output, build_details(result.new_messages(), self._primary_model))
+        return AgentReply(clean_answer(result.output), build_details(result.new_messages(), self._primary_model))
 
 
 def create_store_agent(reply_timeout_seconds: float) -> StoreAgent:
