@@ -162,3 +162,9 @@ customer would get a crash instead of the friendly message.
 
 **Alternatives considered**: A larger hierarchy now, which would add classes nobody handles differently. More can be
 added when a caller needs to tell two failures apart. A separate branch later, which would mean reworking the agent code.
+
+## 15. Streamlit's Stop button (FR-021)
+
+**Finding**: **Verified** in Chrome that with `client.toolbarMode = "minimal"`, used by both `make run` and `make run-dev`, no
+Stop control exists during a wait. It appears only with the developer toolbar. So nobody can press it, and no fix is needed.
+

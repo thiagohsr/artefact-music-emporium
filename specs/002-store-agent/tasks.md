@@ -161,7 +161,7 @@ explicit paths, with no attribution lines. Do not push. Write comments only for 
 - [X] T046 [P] [US4] Update `is_valid_details` in `src/emporio/agent/contract.py` to require lists or tuples for steps, sources and errors
 - [X] T047 [US4] Update `src/emporio/chat/conversation.py` per [research.md](research.md), section 14: handle `EmporioError` by type, keep a logged catch-all only at the agent boundary with `# noqa: BLE001` and its reason, log failures after the sanitizer, report a call that ended with no result as `failed`, log why details became unavailable, and close the panel on a blank edit
 - [X] T048 [US4] Log the sanitized cause in `create_agent` in `src/emporio/agent/factory.py`, with the same `# noqa: BLE001` and reason on its catch-all, keeping `from None` so the page shows no detail, and configure `logging` to the terminal in `src/emporio/chat/app.py`
-- [ ] T049 [US4] Press Streamlit's Stop during a wait in a real browser, record what happens in [research.md](research.md), and if the page stays unusable, fix it in `src/emporio/chat/app.py` with a test (FR-021)
+- [X] T049 [US4] Press Streamlit's Stop during a wait in a real browser, record what happens in [research.md](research.md), and if the page stays unusable, fix it in `src/emporio/chat/app.py` with a test (FR-021)
 
 **Checkpoint**: All stories pass `make test` and `make agent-check`.
 
