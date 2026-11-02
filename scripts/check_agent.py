@@ -84,6 +84,27 @@ def order_checks() -> tuple[Check, ...]:
     )
 
 
+def check_continuing(agent) -> bool:
+    """A page reload is a new conversation ID, with the stored one still open."""
+    with read_connection() as conn:
+        order = conn.execute(
+            """
+            SELECT o.order_id, c.phone, c.email FROM orders o JOIN customers c USING (customer_id)
+            WHERE o.status = 'shipped' LIMIT 1
+            """
+        ).fetchone()
+    verify = f"Quero saber do pedido {order['order_id']}. Telefone {order['phone']}, e-mail {order['email']}."
+    run = f"continuing-{time.time_ns()}"
+    started = time.monotonic()
+    agent.respond(f"{run}-before", verify)
+    agent.respond(f"{run}-before", "Estou pensando em comprar um trombone de vara também")
+    reply = agent.respond(f"{run}-after", verify)
+    called = [step.name for step in reply.details.steps if step.kind != "reasoning"]
+    passed = "find_open_conversation" in called
+    print(f"{'PASS' if passed else 'FAIL'} continue after reload: {time.monotonic() - started:.1f}s, tools={called}")
+    return passed
+
+
 def run_check(agent, index: int, check: Check) -> bool:
     started = time.monotonic()
     called: list[str] = []
@@ -118,6 +139,7 @@ def run_check(agent, index: int, check: Check) -> bool:
 def main() -> None:
     agent = create_store_agent(REPLY_LIMIT_SECONDS)
     results = [run_check(agent, index, check) for index, check in enumerate((*CHECKS, *order_checks()))]
+    results.append(check_continuing(agent))
     print(f"\n{sum(results)} of {len(results)} checks passed")
     if not all(results):
         sys.exit(1)

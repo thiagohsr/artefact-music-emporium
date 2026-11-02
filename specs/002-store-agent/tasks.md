@@ -132,7 +132,7 @@ explicit paths, with no attribution lines. Do not push. Write comments only for 
 ### Implementation for User Story 3
 
 - [X] T037 [US3] Add the stored conversation functions to `src/emporio/data/conversation_store.py` per [data-model.md](data-model.md): user IDs in `customer_identities`, saving after each successful run once identified, finding the open conversation, and closing
-- [ ] T038 [US3] Implement `find_open_conversation` in `src/emporio/tools/conversations.py`, taking the customer from the session and returning the masked transcript, and register it in `src/emporio/agent/store/agent.py`. Connect `finish_conversation`, `end_conversation` and the 30-minute limit to closing the stored conversation (FR-014)
+- [X] T038 [US3] Implement `find_open_conversation` in `src/emporio/tools/conversations.py`, taking the customer from the session and returning the masked transcript, and register it in `src/emporio/agent/store/agent.py`. Connect `finish_conversation`, `end_conversation` and the 30-minute limit to closing the stored conversation (FR-014)
 - [ ] T039 [US3] Add the confirmation modal to `src/emporio/chat/app.py` with `st.dialog`, calling `end_conversation` on the agent on Confirm, per [contracts/chat-changes.md](contracts/chat-changes.md)
 
 **Checkpoint**: Stories 1 to 3 pass `make test`, and a reload continues a verified conversation in the chat.

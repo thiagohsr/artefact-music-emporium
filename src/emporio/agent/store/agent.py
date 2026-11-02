@@ -18,14 +18,21 @@ from emporio.agent.contract import AgentReply
 from emporio.agent.store.prompt import STORE_ZONE, build_instructions, load_guidance
 from emporio.agent.store.providers import build_model
 from emporio.agent.store.trace import build_details
-from emporio.data.conversation_store import Session, SessionStore
+from emporio.data.conversation_store import (
+    Session,
+    SessionStore,
+    close,
+    known_values,
+    save,
+    user_id_for,
+)
 from emporio.data.policy_index import read_settings
 from emporio.data.store_db import DB_PATH, read_connection, write_connection
 from emporio.errors import ProviderError
 from emporio.tools.catalog import get_product, search_products
 from emporio.tools.complaints import register_complaint
-from emporio.tools.conversations import finish_conversation
-from emporio.tools.orders import get_order_status
+from emporio.tools.conversations import find_open_conversation, finish_conversation
+from emporio.tools.orders import VerifiedCustomer, get_order_status
 from emporio.tools.payments import Method, payment_terms
 from emporio.tools.policies import policy_lookup
 
@@ -81,13 +88,33 @@ def _get_order_status(context: RunContext[Turn], order_number: str, phone: str, 
     with read_connection(context.deps.db_path) as conn:
         result, customer = get_order_status(conn, order_number, phone, email, context.deps.now.date())
     if customer is not None:
-        context.deps.session.customer = customer
+        _identify(context.deps, customer)
     return result
 
 
-def _register_complaint(context: RunContext[Turn], summary: str) -> dict[str, Any]:
+def _identify(turn: Turn, customer: VerifiedCustomer) -> None:
+    session = turn.session
+    with write_connection(turn.db_path) as conn:
+        user_id = user_id_for(conn, customer.customer_id)
+        if session.user_id not in (None, user_id):
+            if session.stored_id:
+                close(conn, session.stored_id)
+            session.stored_id = None
+            session.history_reset = True
+    session.customer = customer
+    session.user_id = user_id
+
+
+def _find_open_conversation(context: RunContext[Turn]) -> dict[str, Any]:
     with write_connection(context.deps.db_path) as conn:
-        return register_complaint(conn, summary)
+        return find_open_conversation(conn, context.deps.session, context.deps.now)
+
+
+def _register_complaint(context: RunContext[Turn], summary: str) -> dict[str, Any]:
+    session = context.deps.session
+    values = known_values(session.customer) if session.customer else ()
+    with write_connection(context.deps.db_path) as conn:
+        return register_complaint(conn, summary, session.user_id, values)
 
 
 def _finish_conversation(context: RunContext[Turn]) -> dict[str, Any]:
@@ -132,6 +159,14 @@ TOOLS = (
             "pelo cliente nesta conversa: nunca invente nem complete esses dados, peça o que faltar. Status: pending "
             "(pendente), confirmed (confirmado), shipped (enviado), delivered (entregue), cancelled (cancelado). "
             "days_since_estimate conta os dias desde a previsão de entrega, porque não há data real de entrega."
+        ),
+    ),
+    Tool(
+        _find_open_conversation,
+        name="find_open_conversation",
+        description=(
+            "Use logo depois de get_order_status verificar o cliente. Devolve a conversa anterior ainda aberta desse "
+            "cliente, se houver, para continuar de onde parou."
         ),
     ),
     Tool(
@@ -189,7 +224,25 @@ class StoreAgent:
         return asyncio.run_coroutine_threadsafe(self._run(conversation_id, message), self._loop).result()
 
     def end_conversation(self, conversation_id: str) -> None:
-        self._sessions.end(conversation_id)
+        session = self._sessions.end(conversation_id)
+        if session is not None and session.stored_id is not None:
+            with write_connection(self._db_path) as conn:
+                close(conn, session.stored_id)
+
+    def _store(self, session: Session) -> None:
+        if session.user_id is None:
+            return
+        with write_connection(self._db_path) as conn:
+            session.stored_id = save(
+                conn,
+                session.stored_id,
+                session.user_id,
+                session.history,
+                known_values(session.customer),
+                self._clock(),
+            )
+            if session.closed:
+                close(conn, session.stored_id)
 
     async def _run(self, conversation_id: str, message: str) -> AgentReply:
         session = self._sessions.get(conversation_id)
@@ -200,8 +253,10 @@ class StoreAgent:
                     result = await self._agent.run(message, message_history=session.history, deps=turn)
             except (ModelAPIError, FallbackExceptionGroup) as error:
                 raise ProviderError("no model provider answered") from error
-            session.history = result.all_messages()
+            session.history = result.new_messages() if session.history_reset else result.all_messages()
+            session.history_reset = False
             self._sessions.touch(session)
+            self._store(session)
         return AgentReply(result.output, build_details(result.new_messages(), self._primary_model))
 
 
