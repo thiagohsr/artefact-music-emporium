@@ -41,7 +41,7 @@ explicit paths, with no attribution lines. Do not push. Write comments only for 
 
 ### Tests
 
-- [ ] T004 [P] Write tests in `tests/unit/test_seed_db.py`: a seed creates `customer_identities`, `stored_conversations` and `complaints`, and a second seed keeps their rows while reloading the store tables
+- [X] T004 [P] Write tests in `tests/unit/test_seed_db.py`: a seed creates `customer_identities`, `stored_conversations` and `complaints`, and a second seed keeps their rows while reloading the store tables
 - [ ] T005 [P] Write tests in `tests/unit/test_providers.py`: Ollama comes first and OpenRouter second when both are configured; either alone works; none raises `ValueError`; Cloudflare headers are sent only on the Ollama client; and the request timeout is 25 seconds
 - [ ] T006 [P] Write tests in `tests/unit/test_prompt.py`: the instructions contain sections 7.1, 7.2 and 7.3 read from the policy index and the rules from `docs/stakeholder-clarifications.md` (both WhatsApp numbers, the unaccented email, the installment tiers); the date is stated in `America/Campo_Grande`; and open or closed is right for a weekday at 09:00 and 18:00, Saturday at 13:00 and Sunday, per section 2 of the manual
 - [ ] T007 [P] Write tests in `tests/unit/test_trace.py` for the mapping table in [data-model.md](data-model.md): tool call and result to `Step(kind="tool")`, `policy_lookup` to `retrieval`, thinking to `reasoning`, sources by tool, and `fallback_used` true when the answering model isn't the primary
@@ -50,7 +50,7 @@ explicit paths, with no attribution lines. Do not push. Write comments only for 
 
 ### Implementation
 
-- [ ] T010 Add the three tables from [data-model.md](data-model.md) to `scripts/seed_db.py` with `CREATE TABLE IF NOT EXISTS`, leaving them out of `TABLES` so that seeding keeps their rows
+- [X] T010 Add the three tables from [data-model.md](data-model.md) to `scripts/seed_db.py` with `CREATE TABLE IF NOT EXISTS`, leaving them out of `TABLES` so that seeding keeps their rows
 - [ ] T011 [P] Create `src/emporio/errors.py` with `EmporioError(Exception)`, `ConfigError(EmporioError)` moved from `src/emporio/config.py` with its imports updated, and `ProviderError(EmporioError)`, per [research.md](research.md), section 14
 - [ ] T012 [P] Implement `src/emporio/data/store_db.py`, the only module that opens `data/emporio.sqlite`: a read-only connection and a write connection per call, with foreign keys on
 - [ ] T013 [P] Add `end_conversation(conversation_id) -> None` to the `Agent` Protocol in `src/emporio/agent/contract.py`, and a method that does nothing to `src/emporio/agent/stand_in.py`

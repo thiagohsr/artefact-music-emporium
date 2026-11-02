@@ -69,6 +69,27 @@ CREATE TABLE IF NOT EXISTS order_items (
     quantity INTEGER NOT NULL CHECK (quantity > 0),
     PRIMARY KEY (order_id, product_id)
 ) STRICT;
+
+-- No foreign key to customers, because reseeding deletes those rows and these must survive it.
+CREATE TABLE IF NOT EXISTS customer_identities (
+    user_id TEXT PRIMARY KEY,
+    customer_id INTEGER NOT NULL UNIQUE
+) STRICT;
+
+CREATE TABLE IF NOT EXISTS stored_conversations (
+    stored_id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES customer_identities (user_id),
+    status TEXT NOT NULL CHECK (status IN ('open', 'closed')),
+    messages TEXT NOT NULL CHECK (json_valid(messages)),
+    updated_at TEXT NOT NULL
+) STRICT;
+
+CREATE TABLE IF NOT EXISTS complaints (
+    complaint_id INTEGER PRIMARY KEY,
+    user_id TEXT REFERENCES customer_identities (user_id),
+    summary TEXT NOT NULL,
+    created_at TEXT NOT NULL
+) STRICT;
 """
 
 

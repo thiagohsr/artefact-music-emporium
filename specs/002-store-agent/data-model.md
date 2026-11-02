@@ -8,7 +8,7 @@ keeps their rows, while `make db-reset` removes them with the rest of the databa
 | Column | Type | Rules |
 |---|---|---|
 | `user_id` | text, primary key | Random, the system user ID |
-| `customer_id` | integer | Unique, references `customers` |
+| `customer_id` | integer | Unique. No foreign key, because reseeding deletes `customers` rows |
 
 ## stored_conversations
 
