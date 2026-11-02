@@ -12,8 +12,9 @@ os.environ.setdefault("PYDANTIC_AI_NO_BANNER", "1")
 
 from pydantic_ai import Agent as PydanticAgent
 from pydantic_ai import RunContext, Tool
+from pydantic_ai.capabilities import Hooks
 from pydantic_ai.exceptions import FallbackExceptionGroup, ModelAPIError
-from pydantic_ai.models import Model
+from pydantic_ai.models import Model, ModelRequestContext
 
 from emporio.agent.contract import AgentReply
 from emporio.agent.store.prompt import STORE_ZONE, build_instructions, load_guidance
@@ -51,6 +52,14 @@ class Turn:
     db_path: Path
     settings: Mapping[str, str]
     now: datetime
+    history_length: int = 0
+    customer_changed: bool = False
+
+
+async def _only_current_customer(context: RunContext[Turn], request: ModelRequestContext) -> ModelRequestContext:
+    if context.deps.customer_changed:
+        request.messages = request.messages[context.deps.history_length :]
+    return request
 
 
 def _search_products(
@@ -117,7 +126,9 @@ def _identify(turn: Turn, customer: VerifiedCustomer) -> None:
             if session.stored_id:
                 close(conn, session.stored_id)
             session.stored_id = None
-            session.history_reset = True
+            # Cleared now, not after the run, so a failed reply can't hand this history to the next turn.
+            session.history = []
+            turn.customer_changed = True
     session.customer = customer
     session.user_id = user_id
 
@@ -233,7 +244,12 @@ class StoreAgent:
         # The chat's limit can't stop a running call, so a run stops itself before the chat gives up on it.
         self._run_limit = max(reply_timeout_seconds - RUN_LIMIT_MARGIN_SECONDS, reply_timeout_seconds / 2)
         guidance = load_guidance()
-        self._agent = PydanticAgent(model, deps_type=Turn, tools=tools)
+        self._agent = PydanticAgent(
+            model,
+            deps_type=Turn,
+            tools=tools,
+            capabilities=[Hooks(before_model_request=_only_current_customer)],
+        )
 
         @self._agent.instructions
         def instructions(context: RunContext[Turn]) -> str:
@@ -271,14 +287,13 @@ class StoreAgent:
     async def _run(self, conversation_id: str, message: str) -> AgentReply:
         session = self._sessions.get(conversation_id)
         async with session.lock:
-            turn = Turn(session, conversation_id, self._db_path, self._settings, self._clock())
+            turn = Turn(session, conversation_id, self._db_path, self._settings, self._clock(), len(session.history))
             try:
                 async with asyncio.timeout(self._run_limit):
                     result = await self._agent.run(message, message_history=session.history, deps=turn)
             except (ModelAPIError, FallbackExceptionGroup) as error:
                 raise ProviderError("no model provider answered") from error
-            session.history = result.new_messages() if session.history_reset else result.all_messages()
-            session.history_reset = False
+            session.history = result.new_messages() if turn.customer_changed else result.all_messages()
             self._sessions.touch(session)
             self._store(session)
         return AgentReply(clean_answer(result.output), build_details(result.new_messages(), self._primary_model))

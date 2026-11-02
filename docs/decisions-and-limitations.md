@@ -66,8 +66,9 @@ in [Stakeholder Clarifications](stakeholder-clarifications.md). Issues in the st
 - **Model text in the chat:** the models write Markdown, and plain-text rendering shows it literally, as `**asterisks**`.
 - **Stored conversations:** masking can miss unusual formats and other people's names. The user ID is pseudonymous, because a
   table in the same file maps it to the customer. Nothing deletes stored conversations, although manual section 9 lets
-  customers ask for that. A different customer verifying in the middle of a session closes the first conversation, but that one
-  reply's model call still has the earlier history.
+  customers ask for that. A different customer verifying in the middle of a session closes the first conversation and clears
+  its history, but the model call that made the check already had that history, because the switch isn't known until the
+  check returns.
 - **Order check:** nothing limits repeated guesses at an order's phone and email.
 - **Return periods** count from the delivery estimate, because the data has no actual delivery date.
 - **Complaints** are recorded, but the store's team has no screen to read them.
