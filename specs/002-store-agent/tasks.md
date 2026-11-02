@@ -26,8 +26,8 @@ explicit paths, with no attribution lines. Do not push. Write comments only for 
 **Purpose**: Dependencies and commands the agent needs.
 
 - [X] T001 Run `uv add 'pydantic-ai-slim[openai]>=2.64,<3' 'httpx>=0.28,<1'` to update `pyproject.toml` and `uv.lock`, and confirm `make setup` still works
-- [ ] T002 [P] Add `db` as a prerequisite of `run` and `run-dev` in `Makefile`, and add `agent-check` (depends on `setup` and `db`, runs `python scripts/check_agent.py`) to its targets and `.PHONY` list, with a `##` help comment
-- [ ] T003 [P] Update `.env.example` so `EMPORIO_AGENT` documents `store` as the default and `stand_in` as simulated
+- [X] T002 [P] Add `db` as a prerequisite of `run` and `run-dev` in `Makefile`, and add `agent-check` (depends on `setup` and `db`, runs `python scripts/check_agent.py`) to its targets and `.PHONY` list, with a `##` help comment
+- [X] T003 [P] Update `.env.example` so `EMPORIO_AGENT` documents `store` as the default and `stand_in` as simulated
 
 **Checkpoint**: `make setup` works and `make test` still passes.
 

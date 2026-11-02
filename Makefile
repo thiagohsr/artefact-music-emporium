@@ -9,7 +9,7 @@ VENV_IS_VALID := test -f $(VENV)/pyvenv.cfg && $(VENV_PYTHON) -c \
 	>/dev/null 2>&1
 
 .DEFAULT_GOAL := help
-.PHONY: help check-uv check-venv venv setup shell lock db db-reset policy-index policy-check run run-dev test speckit-check clean reset
+.PHONY: help check-uv check-venv venv setup shell lock db db-reset policy-index policy-check agent-check run run-dev test speckit-check clean reset
 
 help: ## Show available commands
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z_-]+:.*## / {printf "  %-14s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -54,10 +54,13 @@ policy-index: setup ## Rebuild the committed policy index from the PDF (needs an
 policy-check: setup ## Score policy retrieval against the gold questions
 	@. $(VENV)/bin/activate && python scripts/check_retrieval.py
 
-run: setup ## Start the chat
+agent-check: setup db ## Run the acceptance questions on the real model (needs a provider)
+	@. $(VENV)/bin/activate && python scripts/check_agent.py
+
+run: setup db ## Start the chat
 	@. $(VENV)/bin/activate && streamlit run src/emporio/chat/app.py
 
-run-dev: setup ## Start the chat with troubleshooting and crash details on
+run-dev: setup db ## Start the chat with troubleshooting and crash details on
 	@. $(VENV)/bin/activate && EMPORIO_TROUBLESHOOTING=1 streamlit run src/emporio/chat/app.py --client.showErrorDetails=full
 
 test: setup ## Run the automated tests
