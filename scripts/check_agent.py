@@ -61,6 +61,12 @@ def order_checks() -> tuple[Check, ...]:
             ("get_order_status",),
             private,
         ),
+        Check(
+            "order: tracking code",
+            (f"Meu pedido é {order['tracking_code']}. Telefone {phone}, e-mail {email}. Qual o status?",),
+            ("get_order_status",),
+            r"entreg",
+        ),
         Check("order: missing phone and email", (f"Qual o status do meu pedido {number}?",), absent=private),
         Check("order: missing email", (f"Pedido {number}, meu telefone é {phone}. Qual o status?",), absent=private),
         Check(
