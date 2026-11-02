@@ -152,7 +152,7 @@ explicit paths, with no attribution lines. Do not push. Write comments only for 
 - [X] T040 [P] [US4] Write tests in `tests/unit/test_failure_logging.py` using `caplog`: an agent exception, a call that ends with no result, an agent that can't start and details that become unavailable are each logged with planted secrets removed, and the page content doesn't change. An agent raising `SystemExit` gives outcome `failed`, not `timed_out` (FR-017)
 - [X] T041 [P] [US4] Extend `tests/unit/test_sanitize.py`: lists and numbers under sensitive names are removed; `total_tokens` is kept, and `access_token` and `token` still match (FR-018)
 - [X] T042 [P] [US4] Extend `tests/contract/test_agent_interface.py`: `ReplyDetails(errors="boom")` is invalid, and likewise a text in place of steps or sources (FR-019)
-- [ ] T043 [P] [US4] Add to `tests/unit/test_conversation.py` and `tests/integration/test_chat_flow.py`: sending a blank edit from the long-message panel closes it (FR-020)
+- [X] T043 [P] [US4] Add to `tests/unit/test_conversation.py` and `tests/integration/test_chat_flow.py`: sending a blank edit from the long-message panel closes it (FR-020)
 - [X] T044 [P] [US4] Add to `tests/unit/test_store_agent.py`: a failing primary falls back, and the reply details say so; failure on every provider raises `ProviderError`, so the customer gets the friendly message
 
 ### Implementation for User Story 4
