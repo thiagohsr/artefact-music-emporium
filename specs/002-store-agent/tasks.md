@@ -75,14 +75,14 @@ explicit paths, with no attribution lines. Do not push. Write comments only for 
 
 > **NOTE: Write these tests first and confirm they fail before implementation.**
 
-- [ ] T020 [P] [US1] Write tests in `tests/unit/test_catalog.py`: `search_products` by text, category, `min_price_brl`, `max_price_brl`, either limit alone and both, with limits inclusive and compared with the final price under an active promotion; `in_stock_only`; a maximum of 10 results; discontinued products left out; `get_product` for one match, close matches and not found as data; a promotion included only when active, with original price, discount percentage and final price; and `coming_soon` reported as not yet available whatever its stock says
+- [X] T020 [P] [US1] Write tests in `tests/unit/test_catalog.py`: `search_products` by text, category, `min_price_brl`, `max_price_brl`, either limit alone and both, with limits inclusive and compared with the final price under an active promotion; `in_stock_only`; a maximum of 10 results; discontinued products left out; `get_product` for one match, close matches and not found as data; a promotion included only when active, with original price, discount percentage and final price; and `coming_soon` reported as not yet available whatever its stock says
 - [ ] T021 [P] [US1] Write tests in `tests/unit/test_payments.py`: `pix` takes 5% off the list price and nothing off a promotional price; `debit` and `boleto` at the price; R$ 500 in 10x not allowed with `below_minimum`; the boundary at R$ 50, R$ 80 and R$ 100 per tier; 13x not allowed with `too_many_installments`; `product_name` or `amount_brl` accepted; and money handled with `Decimal`
 - [ ] T022 [P] [US1] Write tests in `tests/unit/test_policy_tool.py`: `policy_lookup` returns up to 3 customer sections with numbers, never sections 7, 7.1, 7.2, 7.3 or 10 (FR-023), and falls back to keywords when embedding fails or the embedding model isn't compatible
 - [ ] T023 [P] [US1] Write tests in `tests/unit/test_complaints.py`: `register_complaint` stores a masked summary with the time, and returns the 24 business hours return time; and `finish_conversation` closes the session
 
 ### Implementation for User Story 1
 
-- [ ] T024 [P] [US1] Implement `search_products` and `get_product` in `src/emporio/tools/catalog.py` per [contracts/agent-tools.md](contracts/agent-tools.md)
+- [X] T024 [P] [US1] Implement `search_products` and `get_product` in `src/emporio/tools/catalog.py` per [contracts/agent-tools.md](contracts/agent-tools.md)
 - [ ] T025 [P] [US1] Implement `payment_terms` in `src/emporio/tools/payments.py` per [contracts/agent-tools.md](contracts/agent-tools.md)
 - [ ] T026 [P] [US1] Implement `policy_lookup` in `src/emporio/tools/policies.py` using `src/emporio/data/policy_index.py`, with a short embedding timeout, and vectors only when `is_compatible` passes
 - [ ] T027 [P] [US1] Implement the shared masking in `src/emporio/data/conversation_store.py` (emails and phone-shaped text, plus exact known values), and `register_complaint` in `src/emporio/tools/complaints.py` using it
