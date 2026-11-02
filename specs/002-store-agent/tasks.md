@@ -172,8 +172,8 @@ explicit paths, with no attribution lines. Do not push. Write comments only for 
 **Purpose**: Record the decisions and validate everything together.
 
 - [X] T050 Update `README.md` with the decisions in [research.md](research.md), the store agent as the default, what a provider needs, and these limitations: masking can miss unusual formats, stored conversations are never deleted automatically despite manual section 9, complaints have no screen for the store's team yet, nothing limits repeated guesses at an order's phone and email, and a finished conversation stays on screen until the next message
-- [ ] T051 [P] Remove from `docs/pending-updates.md` what this feature completes, and update `docs/draft-check-list.md`
-- [ ] T052 [P] Note in `specs/001-streamlit-chat/quickstart.md` that its checks need `EMPORIO_AGENT=stand_in`
+- [X] T051 [P] Remove from `docs/pending-updates.md` what this feature completes, and update `docs/draft-check-list.md`
+- [X] T052 [P] Note in `specs/001-streamlit-chat/quickstart.md` that its checks need `EMPORIO_AGENT=stand_in`
 - [ ] T053 Run `make test`, `make policy-check` and `make agent-check` on both providers, and record the eight-tool reply times in [research.md](research.md), against the 60-second limit
 - [ ] T054 Run every check in [quickstart.md](quickstart.md) in a real browser, and fix anything that fails in the file responsible
 
