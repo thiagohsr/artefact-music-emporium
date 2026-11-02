@@ -127,13 +127,13 @@ explicit paths, with no attribution lines. Do not push. Write comments only for 
 > **NOTE: Write these tests first and confirm they fail before implementation.**
 
 - [X] T035 [P] [US3] Write tests in `tests/unit/test_conversation_store.py`: nothing is stored before identification; on identification, the session's earlier messages are stored, masked, with no thinking parts and no readable name, phone or email, including in tool arguments and results (SC-004); a customer has one user ID and at most one open conversation, with the most recent winning; 30 minutes without a message closes it; a closed conversation stays stored and can't be continued; and a second customer passing the check closes the first customer's conversation and clears the history
-- [ ] T036 [P] [US3] Write `AppTest` flows in `tests/integration/test_new_conversation.py`: "Nova conversa" opens a modal in Portuguese; Cancel changes nothing; Confirm calls `end_conversation`, clears the messages and changes the identifier. Update the existing test in `tests/integration/test_chat_flow.py` that clicks the button
+- [X] T036 [P] [US3] Write `AppTest` flows in `tests/integration/test_new_conversation.py`: "Nova conversa" opens a modal in Portuguese; Cancel changes nothing; Confirm calls `end_conversation`, clears the messages and changes the identifier. Update the existing test in `tests/integration/test_chat_flow.py` that clicks the button
 
 ### Implementation for User Story 3
 
 - [X] T037 [US3] Add the stored conversation functions to `src/emporio/data/conversation_store.py` per [data-model.md](data-model.md): user IDs in `customer_identities`, saving after each successful run once identified, finding the open conversation, and closing
 - [X] T038 [US3] Implement `find_open_conversation` in `src/emporio/tools/conversations.py`, taking the customer from the session and returning the masked transcript, and register it in `src/emporio/agent/store/agent.py`. Connect `finish_conversation`, `end_conversation` and the 30-minute limit to closing the stored conversation (FR-014)
-- [ ] T039 [US3] Add the confirmation modal to `src/emporio/chat/app.py` with `st.dialog`, calling `end_conversation` on the agent on Confirm, per [contracts/chat-changes.md](contracts/chat-changes.md)
+- [X] T039 [US3] Add the confirmation modal to `src/emporio/chat/app.py` with `st.dialog`, calling `end_conversation` on the agent on Confirm, per [contracts/chat-changes.md](contracts/chat-changes.md)
 
 **Checkpoint**: Stories 1 to 3 pass `make test`, and a reload continues a verified conversation in the chat.
 

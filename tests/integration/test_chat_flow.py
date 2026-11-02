@@ -18,6 +18,9 @@ class RecordingAgent:
         self.calls.append((conversation_id, message))
         return AgentReply(f"Resposta para {message}")
 
+    def end_conversation(self, conversation_id):
+        pass
+
 
 @pytest.fixture
 def recording_agent(monkeypatch):
@@ -64,6 +67,7 @@ def test_new_conversation_clears_messages_and_changes_the_identifier(open_app, r
     send(app, "Primeira")
 
     app.button(key="new_conversation").click().run()
+    app.button(key="confirm_new_conversation").click().run()
 
     assert len(app.text) == 0
     send(app, "Segunda")
