@@ -127,7 +127,7 @@ When the main model or a service fails, the agent uses the fallback, and a devel
 
 #### Orders
 
-- **FR-008**: Order details MUST be shared only when the order number, phone and email all match that order's customer, checked outside the model's control.
+- **FR-008**: Order details MUST be shared only when the order number or tracking code, phone and email all match that order's customer, checked outside the model's control.
 - **FR-009**: A failed check MUST NOT reveal whether the order or the customer exists.
 
 #### Conversations

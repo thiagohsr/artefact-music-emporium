@@ -105,3 +105,70 @@ def test_order_without_an_estimate_has_no_day_count(conn):
     result, _ = get_order_status(conn, str(row["order_id"]), customer["phone"], customer["email"], TODAY)
 
     assert result["days_since_estimate"] is None
+
+
+TRACKING_CODES = (
+    "BRAB1234567BR",
+    "BRCX9876543BR",
+    "BRDZ4561230BR",
+    "BRQM7890123BR",
+    "BRTP3456789BR",
+    "BRVN6543210BR",
+    "BRKR1122334BR",
+    "BRJL5544332BR",
+)
+
+
+def owner_by_code(conn, code):
+    return conn.execute(
+        """
+        SELECT o.order_id, c.phone, c.email FROM orders o JOIN customers c USING (customer_id)
+        WHERE o.tracking_code = ?
+        """,
+        (code,),
+    ).fetchone()
+
+
+def test_the_list_covers_every_tracking_code_in_the_data(conn):
+    rows = conn.execute("SELECT tracking_code FROM orders WHERE tracking_code IS NOT NULL")
+
+    assert {row["tracking_code"] for row in rows} == set(TRACKING_CODES)
+
+
+@pytest.mark.parametrize("code", TRACKING_CODES)
+def test_a_tracking_code_finds_its_order(conn, code):
+    customer = owner_by_code(conn, code)
+
+    result, verified = get_order_status(conn, code, customer["phone"], customer["email"], TODAY)
+
+    assert result["verified"] is True
+    assert result["order_number"] == customer["order_id"]
+    assert result["tracking_code"] == code
+    assert verified is not None
+
+
+@pytest.mark.parametrize("written", ["brab1234567br", "  BRAB1234567BR ", "BRAB 1234567 BR", "BRAB-1234567-BR"])
+def test_a_tracking_code_ignores_case_and_separators(conn, written):
+    customer = owner_by_code(conn, "BRAB1234567BR")
+
+    assert get_order_status(conn, written, customer["phone"], customer["email"], TODAY)[0]["verified"] is True
+
+
+@pytest.mark.parametrize("code", TRACKING_CODES)
+def test_a_tracking_code_with_another_customers_details_gives_the_same_failure(conn, code):
+    customer = owner_by_code(conn, code)
+    other = conn.execute(
+        "SELECT phone, email FROM customers WHERE phone <> ? AND email <> ? LIMIT 1",
+        (customer["phone"], customer["email"]),
+    ).fetchone()
+
+    assert get_order_status(conn, code, other["phone"], customer["email"], TODAY) == (NOT_VERIFIED, None)
+    assert get_order_status(conn, code, customer["phone"], other["email"], TODAY) == (NOT_VERIFIED, None)
+
+
+def test_the_digits_of_a_code_are_not_read_as_an_order_number(conn):
+    customer = owner(conn, 1)
+
+    assert get_order_status(conn, "BRXX0000001BR", customer["phone"], customer["email"], TODAY) == (NOT_VERIFIED, None)
+    assert get_order_status(conn, "A1", customer["phone"], customer["email"], TODAY) == (NOT_VERIFIED, None)
+

@@ -39,6 +39,7 @@ Returns the final price, the installment value, the minimum that applies, `allow
 ## get_order_status
 
 - All three values are required by the tool's signature, so the model must ask for what's missing.
+- `order_number` accepts the order number or the tracking code, ignoring case and separators.
 - The order is looked up first, then the phone (digits only) and email (ignoring case) are compared with that order's
   customer. Any failure gives the same result, including an order that doesn't exist.
 - On success it returns status, order date, stored total, payment method, items, tracking code, delivery estimate and

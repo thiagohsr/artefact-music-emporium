@@ -172,8 +172,9 @@ TOOLS = (
         _get_order_status,
         name="get_order_status",
         description=(
-            "Use quando o cliente pergunta sobre um pedido. Exige o número do pedido, o telefone e o e-mail informados "
-            "pelo cliente nesta conversa: nunca invente nem complete esses dados, peça o que faltar. Status: pending "
+            "Use quando o cliente pergunta sobre um pedido. Em order_number, informe o número do pedido ou o código de "
+            "rastreamento (como BRAB1234567BR). Exige também o telefone e o e-mail informados pelo cliente nesta "
+            "conversa: nunca invente nem complete esses dados, peça o que faltar. Status: pending "
             "(pendente), confirmed (confirmado), shipped (enviado), delivered (entregue), cancelled (cancelado). "
             "days_since_estimate conta os dias desde a previsão de entrega, porque não há data real de entrega."
         ),

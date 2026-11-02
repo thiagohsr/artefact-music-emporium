@@ -34,14 +34,14 @@ def get_order_status(
     today: date,
 ) -> tuple[dict[str, Any], VerifiedCustomer | None]:
     """Starts from the order, because two customers share an email and an email alone identifies nobody."""
-    order_id = _digits(order_number)
+    reference = re.sub(r"[\s#.-]", "", order_number).upper()
     order = conn.execute(
         """
         SELECT o.*, c.name, c.phone, c.email
         FROM orders o JOIN customers c USING (customer_id)
-        WHERE o.order_id = ?
+        WHERE upper(o.tracking_code) = ? OR CAST(o.order_id AS TEXT) = ?
         """,
-        (int(order_id) if order_id else -1,),
+        (reference, reference),
     ).fetchone()
     if (
         order is None
