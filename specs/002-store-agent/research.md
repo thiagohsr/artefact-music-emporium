@@ -168,3 +168,18 @@ added when a caller needs to tell two failures apart. A separate branch later, w
 **Finding**: **Verified** in Chrome that with `client.toolbarMode = "minimal"`, used by both `make run` and `make run-dev`, no
 Stop control exists during a wait. It appears only with the developer toolbar. So nobody can press it, and no fix is needed.
 
+## 16. Results with all eight tools
+
+**Measured** on 2026-11-02 with `make agent-check` (22 checks), three runs on each model:
+
+| Model | Checks passed | Reply time, most checks |
+|---|---|---|
+| `qwen3:8b` | 20, 22 and 21 of 22 | Median 5.5 s, slowest 24.7 s |
+| `openai/gpt-4o-mini` | 22, 21 and 21 of 22 | Median 2.1 s, slowest 7.4 s |
+
+The timing leaves out checks whose names contain a colon, because of how they were summarized. Replies stayed well under the
+60-second limit, including a three-message check at up to 35.5 s in total. No check leaked an order.
+
+The quickstart in Chrome on `qwen3:8b` passed 20 of 21: the failure was a complaint reply claiming it was registered without
+calling the tool. The misses come from the model and vary between runs, so the checks stay strict instead of being loosened.
+
