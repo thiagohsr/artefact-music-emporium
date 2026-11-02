@@ -12,6 +12,9 @@ __pycache__/
 # Policy index, committed so that no embedding provider is needed to build it
 !data/policies.sqlite
 
+# Store data for the hosted app, which has no way to run make db
+!data/emporio.sqlite
+
 # Secrets
 .env
 .env.*
