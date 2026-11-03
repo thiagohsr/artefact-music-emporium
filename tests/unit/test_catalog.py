@@ -127,9 +127,9 @@ def test_availability_follows_status_before_stock(conn, name, availability):
 
 
 def test_search_says_how_many_results_it_left_out(conn):
-    result = search_products(conn, category="Violões", max_price_brl=1000)
+    result = search_products(conn)
 
-    assert result["total"] > result["shown"] == len(result["products"]) == 10
+    assert result["total"] > result["shown"] == len(result["products"]) == MAX_RESULTS
 
 
 def test_search_shows_every_result_under_the_limit(conn):

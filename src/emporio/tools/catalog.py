@@ -5,7 +5,7 @@ import unicodedata
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Any
 
-MAX_RESULTS = 10
+MAX_RESULTS = 20
 CENT = Decimal("0.01")
 
 PRODUCTS = """
