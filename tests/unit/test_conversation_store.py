@@ -71,6 +71,31 @@ def test_stored_messages_have_no_readable_personal_data_or_thinking():
         assert private not in stored
 
 
+@pytest.mark.parametrize(
+    "text",
+    [
+        f"Meu e-mail:\n{EMAIL}",
+        f"Telefone\t{PHONE}",
+        f'Ela disse "{NAME}"\ne-mail\n{EMAIL}',
+        f"Linha\\{EMAIL}",
+    ],
+)
+def test_stored_text_stays_valid_json_when_masking_follows_an_escaped_character(text):
+    """JSON writes a line break as backslash n, and masking the JSON text once ate the n and broke it."""
+    stored = serialize([ModelRequest(parts=[UserPromptPart(text)])], KNOWN)
+
+    content = json.loads(stored)[0]["parts"][0]["content"]
+    assert EMAIL not in content
+    assert PHONE not in content
+    assert NAME not in content
+
+
+def test_stored_text_saves_when_an_email_follows_a_line_break(conn):
+    save(conn, None, user_id_for(conn, 1), [ModelRequest(parts=[UserPromptPart(f"e-mail:\n{EMAIL}")])], KNOWN, NOW)
+
+    assert conn.execute("SELECT count(*) FROM stored_conversations").fetchone()[0] == 1
+
+
 def test_masking_keeps_words_that_only_contain_a_name():
     assert "Banana" in serialize([ModelRequest(parts=[UserPromptPart("Banana")])], KNOWN)
 
