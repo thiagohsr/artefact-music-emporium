@@ -86,5 +86,18 @@ material is ambiguous, and lists the known limitations.
 
 ## Example Conversations
 
-[Sample Scenarios](docs/sample-scenarios.md) suggests questions to try in the chat, covering the catalog, store
-information, prices and the return policy.
+The challenge brief suggests four scenarios. Each one has a real conversation with the agent in
+[data/example-conversation](data/example-conversation), with a fifth for a request outside the store's scope. Every file
+shows the conversation first, then a collapsed section with the tools called, their results, the model's reasoning, and
+the time and tokens of each step.
+
+| Brief's suggestion | What it shows | Conversation |
+|---|---|---|
+| "Quais opções de violões disponíveis custando até R$1000?" | Catalog search with a price limit | [busca-no-catalogo.md](data/example-conversation/busca-no-catalogo.md) |
+| "Qual o endereço da loja?" | General store information, from the policy manual | [informacoes-da-loja.md](data/example-conversation/informacoes-da-loja.md) |
+| "Quanto custa o Takamine GD20?" | A product's price, then installments in a follow-up | [preco-e-parcelamento.md](data/example-conversation/preco-e-parcelamento.md) |
+| "Me arrependi da minha compra, posso devolver meu pedido?" | **Non-trivial:** verifies the customer by tracking code, phone and email, reads the order and applies the return policy | [devolucao-com-pedido.md](data/example-conversation/devolucao-com-pedido.md) |
+| A recipe request | Declining a request outside the store's scope | [fora-do-escopo.md](data/example-conversation/fora-do-escopo.md) |
+
+To try them yourself, start the chat with `make run-dev`. The return scenario needs an order's tracking code, phone
+and email from the store data, for example `BRKR1122334BR`, `(67) 99789-0123` and `leticia.rocha@jmail.com`.
