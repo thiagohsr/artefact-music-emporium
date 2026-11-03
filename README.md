@@ -60,7 +60,7 @@ are simulated. Start a message with one of these commands to simulate a situatio
 
 ## Technical Decisions and Limitations
 
-[Technical Decisions and Limitations](docs/decisions-and-limitations.md) justifies the framework, model, retrieval
+[Technical Decisions and Limitations](DECISIONS.md) justifies the framework, model, retrieval
 architecture, prompt strategy and conversation history, records the assumptions made where the store's
 material is ambiguous, and lists the known limitations.
 
