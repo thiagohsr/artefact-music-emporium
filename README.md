@@ -14,6 +14,7 @@ You need [uv](https://docs.astral.sh/uv/getting-started/installation/) and `make
 | `make run-dev` | Starts the chat with the troubleshooting view and crash details on |
 | `make test` | Runs the automated tests |
 | `make agent-check` | Asks the acceptance questions on the real model, and needs a provider |
+| `make evals` | Scores the return cases five times each on the real model, and needs a provider |
 | `make policy-check` | Scores policy retrieval against 16 gold questions (needs an embedding provider) |
 | `make policy-index` | Rebuilds `data/policies.sqlite` from the PDF, only needed if the PDF or model changes |
 
@@ -34,11 +35,30 @@ Copy `.env.example` to `.env`. The agent needs a model provider, and the quickes
 Settings are read once at startup, so restart the chat after changing one. An invalid value shows an
 error page naming the setting.
 
-The project uses `qwen3:8b` for chat and `qwen3-embedding:4b` for embeddings, set in `OLLAMA_CHAT_MODEL` and
-`OLLAMA_EMBEDDING_MODEL`. To run them on your own Ollama, pull both models and set `OLLAMA_BASE_URL`. The committed
-policy index only works with the embedding model that built it, so run `make policy-index` after changing that one. To use the project's own server instead, ask for its `OLLAMA_BASE_URL`,
-`CF_ACCESS_CLIENT_ID` and `CF_ACCESS_CLIENT_SECRET` by replying to the selection process e-mail, as they aren't
-published here.
+### Connecting a real model
+
+The agent needs at least one model provider. With both configured, the self-hosted Ollama server is tried first and
+OpenRouter is the fallback.
+
+| Option | Set in `.env` | Notes |
+|---|---|---|
+| **OpenRouter** (quickest) | `OPENROUTER_API_KEY` | Create a key at [openrouter.ai](https://openrouter.ai/keys). Uses `openai/gpt-4o-mini` for chat and `qwen/qwen3-embedding-4b` for the policy search |
+| **Your own Ollama** | `OLLAMA_BASE_URL`, such as `http://localhost:11434` | Pull the models first: `ollama pull qwen3:8b && ollama pull qwen3-embedding:4b`. Both together took about 12 GB of GPU memory at a 16k context. Ollama defaults to a 4k context on GPUs under 24 GB, so raise it with `OLLAMA_CONTEXT_LENGTH` |
+| **The project's own server** | `OLLAMA_BASE_URL`, `CF_ACCESS_CLIENT_ID` and `CF_ACCESS_CLIENT_SECRET` | Not published: ask for them by replying to the selection process e-mail |
+
+| Setting | Default | Effect |
+|---|---|---|
+| `OLLAMA_CHAT_MODEL` | `qwen3:8b` | Chat model on Ollama |
+| `OLLAMA_EMBEDDING_MODEL` | `qwen3-embedding:4b` | Embedding model on Ollama |
+| `OPENROUTER_CHAT_MODEL` | `openai/gpt-4o-mini` | Chat model on OpenRouter |
+| `OPENROUTER_EMBEDDING_MODEL` | `qwen/qwen3-embedding-4b` | Embedding model on OpenRouter |
+
+- **Chat models** can change freely. The committed policy index only works with the embedding model that built it, so
+  run `make policy-index` after changing an embedding model.
+- **To use only one provider** for a run, leave the other one empty on the command line, which overrides `.env`:
+  `OLLAMA_BASE_URL= make run` for OpenRouter only, or `OPENROUTER_API_KEY= make run` for Ollama only.
+- **To see which model answered**, start with `make run-dev`: each reply shows the model, the provider and whether the
+  fallback was used.
 
 ### Stand-in agent
 
