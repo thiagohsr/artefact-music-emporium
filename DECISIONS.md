@@ -8,8 +8,8 @@ Why the agent is built the way it is, what was assumed, and where it falls short
 
 The store manual contradicts itself on the WhatsApp number, the email address and the credit card installment minimums.
 
-- [Stakeholder Clarifications](stakeholder-clarifications.md) has the rules the agent follows and the questions still open with the store.
-- [Store Data Corner Cases](corner-cases/store-data.md) has the issues found in the store data.
+- [Stakeholder Clarifications](docs/stakeholder-clarifications.md) has the rules the agent follows and the questions still open with the store.
+- [Store Data Corner Cases](docs/corner-cases/store-data.md) has the issues found in the store data.
 
 ## The agent
 
@@ -141,7 +141,7 @@ Keyword search is only the fallback: it misses "Me arrependi da minha compra".
 
 ### Conversation recovery with contact details
 
-**Status:** specified in [spec 003](../specs/003-conversation-recovery/spec.md), not implemented.
+**Status:** specified in [spec 003](specs/003-conversation-recovery/spec.md), not implemented.
 
 **The problem it solves:** a customer who closes the tab, or moves to another device, loses a conversation that never passed the order check.
 
