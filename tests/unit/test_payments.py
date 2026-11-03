@@ -110,3 +110,28 @@ def test_product_not_found_is_data(conn):
 
 def test_a_price_or_a_product_is_required(conn):
     assert payment_terms(conn, "credit", installments=3)["reason"] == "price_required"
+
+
+@pytest.mark.parametrize(
+    ("amount", "most", "each"),
+    [(2199, 12, 183.25), (1200, 12, 100.0), (1199, 11, 109.0), (500, 6, 83.33), (100, 2, 50.0), (49.9, 1, 49.9)],
+)
+def test_credit_says_how_many_installments_the_price_allows(conn, amount, most, each):
+    result = payment_terms(conn, "credit", amount_brl=amount, installments=1)
+
+    assert result["max_installments"] == most
+    assert result["max_installment_brl"] == each
+
+
+def test_a_product_says_how_many_installments_it_allows(conn):
+    result = payment_terms(conn, "credit", product_name="Takamine GD20", installments=1)
+
+    assert (result["max_installments"], result["max_installment_brl"]) == (12, 183.25)
+
+
+@pytest.mark.parametrize("method", ["pix", "debit", "boleto"])
+def test_other_methods_allow_a_single_payment(conn, method):
+    result = payment_terms(conn, method, amount_brl=500, installments=1)
+
+    assert result["max_installments"] == 1
+    assert result["max_installment_brl"] == result["final_price_brl"]

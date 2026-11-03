@@ -172,7 +172,9 @@ TOOLS = (
         description=(
             "Use quando o cliente pergunta como pagar, sobre parcelas ou descontos. Informe product_name ou amount_brl, "
             "e installments com o número de parcelas pedido, ou 1 para pagamento à vista. method é credit por padrão, "
-            "ou pix, debit ou boleto. Devolve o preço final, o valor da parcela, a parcela mínima e se é permitido."
+            "ou pix, debit ou boleto. Devolve o preço final, o valor da parcela, a parcela mínima e se é permitido. "
+            "Se o cliente perguntar em quantas vezes pode parcelar, use installments 1 e responda com max_installments "
+            "e max_installment_brl, sem perguntar quantas parcelas ele quer."
         ),
     ),
     Tool(

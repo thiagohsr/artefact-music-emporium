@@ -19,6 +19,11 @@ def _minimum(installments: int) -> Decimal:
     return Decimal(80) if installments <= 6 else Decimal(100)
 
 
+def _max_installments(final: Decimal, method: str) -> int:
+    limit = MAX_INSTALLMENTS if method == "credit" else 1
+    return next((count for count in range(limit, 1, -1) if final / count >= _minimum(count)), 1)
+
+
 def payment_terms(
     conn: sqlite3.Connection,
     method: Method,
@@ -41,6 +46,7 @@ def payment_terms(
     final = price * (1 - PIX_DISCOUNT) if method == "pix" and not on_promotion else price
     installment = final / installments
     minimum = _minimum(installments)
+    most = _max_installments(final, method)
     reason = None
     if installments > (MAX_INSTALLMENTS if method == "credit" else 1) or installments < 1:
         reason = "too_many_installments"
@@ -52,6 +58,8 @@ def payment_terms(
         "installments": installments,
         "installment_brl": money(installment),
         "minimum_installment_brl": money(minimum),
+        "max_installments": most,
+        "max_installment_brl": money(final / most),
         "allowed": reason is None,
         "reason": reason,
     }
