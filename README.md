@@ -78,11 +78,71 @@ are simulated. Start a message with one of these commands to simulate a situatio
 | `/erro` | The agent failing during a reply |
 | `/lento` | A reply slower than the time limit |
 
-## Technical Decisions and Limitations
+## Technical Decisions
 
-[Technical Decisions and Limitations](DECISIONS.md) justifies the framework, model, retrieval
-architecture, prompt strategy and conversation history, records the assumptions made where the store's
-material is ambiguous, and lists the known limitations.
+The main choices, in one line each. [DECISIONS.md](DECISIONS.md) has the reasoning, the alternatives and the
+evidence behind them.
+
+| Decision | Choice | Why |
+|---|---|---|
+| **Agent approach** | One Pydantic AI agent with a tool loop over eight typed tools | Choosing the right source is the core of the brief, and in a loop a wrong first call is cheap. A router with specialist agents is the next step only if evaluation shows wrong tool choices |
+| **LLM and provider** | `qwen3:8b` on a self-hosted Ollama server, with thinking on, and `gpt-4o-mini` on OpenRouter as the fallback | Runs on a 16 GB GPU, while OpenRouter is what an evaluator without the server uses. Turning thinking off made one reply state a made-up price |
+| **What must be exact lives in code** | Prices, stock, installments, return windows and the identity check are computed by the tools | Small models get dates and arithmetic wrong, so they only read the results |
+| **Retrieval** | The manual split into its 28 sections, searched by vectors (`qwen3-embedding:4b`) with keyword search as a fallback, in an index committed to the repo | The right section is in the top 3 for 16 of 16 test questions, and nobody needs an embedding provider to get the index |
+| **Prompt strategy** | Section 7 of the manual loaded as written, inside labelled sections for identity, scope, answer style, sources and orders, with example declines | The store's own tone and rules drive the agent, and the closed scope stops general-assistant answers |
+| **Conversation history** | Kept for the session, and through a page reload via a link in the address, for 30 minutes. Verified customers' conversations are also stored masked, under a random user ID | Follow-ups work, and an accidental reload doesn't lose a quote |
+| **Customer privacy** | Order details only with the tracking code, phone and email together, checked in the tool | Order IDs are sequential and easy to guess, and the model never decides who someone is |
+| **Interface** | Streamlit, calling the agent in the same process | One command to run, with the time spent on the agent and its evaluation |
+
+## Known Limitations
+
+The main ones are below, and [DECISIONS.md](DECISIONS.md#known-limitations) lists them all.
+
+- **Reliability varies between runs.** `make evals` shows that neither model reliably checks the return policy before
+  answering a return, and `gpt-4o-mini` denied a return that was still allowed in 3 of 5 runs.
+- **Orders without a tracking code can't be looked up.** The code is sent when an order is dispatched, so pending,
+  confirmed and cancelled orders, 12 of the 20 in the data, get pointed to the store's channels.
+- **Links and images in replies render** because replies use Markdown, and nothing filters them yet.
+- **One process, no login, no deletion on request.** The chat is meant for local use and demos, and stored conversations
+  aren't deleted when a customer asks, which manual section 9 allows.
+
+## What I Would Do With More Time
+
+- **Fix the return answers in code:** put the relevant manual sections and the open or closed windows, in plain words,
+  into the order result, so the model doesn't have to remember to look them up.
+- **Grow the evaluation suite:** move the older `make agent-check` questions into `make evals`, add off-topic and attack
+  cases, a judge for tone, cases kept out of prompt tuning, and a comparison with a newer or larger Qwen on the same cases.
+- **Recover a conversation from a phone and email,** for a closed tab or another device. It's designed in
+  [spec 003](specs/003-conversation-recovery/spec.md) and not built, because the page link fixed the accidental reload
+  with much less risk.
+- **Protect stored data better:** a secret-keyed hash for the user ID instead of a mapping table, deletion on request,
+  and filtering images out of replies.
+- **Cache what's safe to cache:** the static start of the prompt, and question embeddings for the policy search, but
+  never answers with prices, stock or orders.
+- **Production pieces:** a separate API in front of the agent, Postgres instead of SQLite, and test fixtures that don't
+  depend on the store's CSV rows.
+
+## AI Coding Assistant Usage
+
+I used the Claude Code extension in VS Code, mostly with the Sonnet 5.5 and Opus 5.5 models at medium effort, and
+Fable 5.1 for some of the reasoning.
+
+My workflow focused on agentic development through Spec Kit specifications, aiming to deliver most features with
+quality despite the low-cost models the agent runs on: `qwen3:8b` locally and `gpt-4o-mini` on OpenRouter. It feels
+like a way to deliver features through documentation that lives alongside the code. That makes it easier for anyone
+who wants to improve a feature to meet its BDD specifications, or to get a quick overview of the project's purpose
+through [.specify/memory/constitution.md](.specify/memory/constitution.md).
+
+How I kept control of the work:
+
+- **Scope before writing:** every specification started with me confirming its scope, and I removed features I hadn't
+  asked for.
+- **Correcting with evidence:** I pointed the agent's tone to section 7 of the manual, showed that a live character count
+  was possible after being told it wasn't, and required that orders be found by tracking code only.
+- **Testing it myself:** running the real app found what the tests missed, such as the fallback never being reached
+  with my server off, a reload losing a quote, and a masking bug that broke saving on the hosted app.
+- **Rules for the assistant:** one commit per subject, a secret scan before every commit, no force-pushes and no
+  attribution lines.
 
 ## Example Conversations
 
