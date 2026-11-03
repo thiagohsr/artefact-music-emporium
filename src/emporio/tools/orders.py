@@ -18,12 +18,31 @@ class VerifiedCustomer:
     email: str
 
 
+# Manual sections 4.1 and 4.3 count from delivery, and 4.2 from the purchase.
+WITHDRAWAL_DAYS = 7
+PREFERENCE_EXCHANGE_DAYS = 7
+DEFECT_EXCHANGE_DAYS = 30
+
+
 def _digits(text: str) -> str:
     return re.sub(r"\D", "", text)
 
 
 def _days_since(estimate: str | None, today: date) -> int | None:
     return (today - date.fromisoformat(estimate)).days if estimate else None
+
+
+def _returns(order: sqlite3.Row, today: date) -> dict[str, bool] | None:
+    """Worked out here, because the model misread the dates and offered windows that had closed."""
+    since_delivery = _days_since(order["estimated_delivery"], today)
+    if order["status"] != "delivered" or since_delivery is None:
+        return None
+    since_purchase = (today - date.fromisoformat(order["order_date"])).days
+    return {
+        "withdrawal_open": since_delivery <= WITHDRAWAL_DAYS,
+        "preference_exchange_open": since_delivery <= PREFERENCE_EXCHANGE_DAYS,
+        "defect_exchange_open": since_purchase <= DEFECT_EXCHANGE_DAYS,
+    }
 
 
 def get_order_status(
@@ -67,6 +86,7 @@ def get_order_status(
         "tracking_code": order["tracking_code"],
         "estimated_delivery": order["estimated_delivery"],
         "days_since_estimate": _days_since(order["estimated_delivery"], today),
+        "returns": _returns(order, today),
     }
     customer = VerifiedCustomer(order["customer_id"], order["name"], order["phone"], order["email"])
     return result, customer

@@ -164,3 +164,32 @@ def test_an_order_id_never_finds_an_order(conn, order_id):
 
     for written in (str(order_id), f"#{order_id}", f"{order_id:03d}"):
         assert get_order_status(conn, written, customer["phone"], customer["email"], TODAY) == (NOT_VERIFIED, None)
+
+
+def returns_for(conn, code, today):
+    customer = owner_by_code(conn, code)
+    return get_order_status(conn, code, customer["phone"], customer["email"], today)[0]["returns"]
+
+
+def test_every_window_is_open_within_its_days(conn):
+    assert returns_for(conn, "BRAB1234567BR", date(2025, 11, 1)) == {
+        "withdrawal_open": True,
+        "preference_exchange_open": True,
+        "defect_exchange_open": True,
+    }
+
+
+def test_withdrawal_and_preference_close_after_7_days_from_the_delivery_estimate(conn):
+    returns = returns_for(conn, "BRAB1234567BR", date(2025, 11, 2))
+
+    assert returns["withdrawal_open"] is False
+    assert returns["preference_exchange_open"] is False
+    assert returns["defect_exchange_open"] is True
+
+
+def test_a_defect_exchange_closes_after_30_days_from_the_purchase(conn):
+    assert returns_for(conn, "BRAB1234567BR", date(2025, 11, 15))["defect_exchange_open"] is False
+
+
+def test_an_order_not_delivered_yet_has_no_return_windows(conn):
+    assert returns_for(conn, "BRJL5544332BR", date(2026, 3, 1)) is None

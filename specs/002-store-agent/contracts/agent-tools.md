@@ -39,6 +39,7 @@ Returns the final price, the installment value, the minimum that applies, `allow
 ## get_order_status
 
 - All three values are required by the tool's signature, so the model must ask for what's missing.
+- A delivered order also has `returns`: whether the 7-day withdrawal and preference exchange windows, counted from the delivery estimate, and the 30-day defect exchange window, counted from the purchase, are still open.
 - `tracking_code` is the only way to find an order, ignoring case and separators. An order ID is never accepted, so an order with no code yet can't be looked up.
 - The order is looked up first, then the phone (digits only) and email (ignoring case) are compared with that order's
   customer. Any failure gives the same result, including an order that doesn't exist.

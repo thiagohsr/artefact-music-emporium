@@ -192,7 +192,8 @@ TOOLS = (
             "(pendente), confirmed (confirmado), shipped (enviado), delivered (entregue), cancelled (cancelado). "
             "estimated_delivery é a previsão de entrega, a única data de entrega conhecida: não há data real de "
             "entrega, então nunca diga em que dia o pedido foi entregue. "
-            "days_since_estimate conta os dias desde essa previsão."
+            "days_since_estimate conta os dias desde essa previsão. returns diz quais prazos de devolução e troca ainda estão "
+            "abertos: nunca ofereça um prazo fechado. Depois do prazo de troca por defeito, a garantia é com o fabricante."
         ),
     ),
     Tool(
