@@ -86,3 +86,8 @@ def test_replies_are_short_and_keep_tool_fields_out(instructions):
     assert "Escreva como numa mensagem de WhatsApp" in instructions
     assert "cite a parcela mínima só quando um parcelamento for recusado" in instructions
 
+
+def test_playing_and_tuning_advice_is_out_of_scope(instructions):
+    assert "dicas de como tocar, afinar ou consertar um instrumento" in instructions
+    assert "Dúvidas práticas" not in instructions
+
