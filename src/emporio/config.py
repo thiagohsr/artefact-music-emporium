@@ -5,14 +5,10 @@ from dataclasses import dataclass
 
 from dotenv import find_dotenv, load_dotenv
 
-DEFAULT_AGENT = "stand_in"
+from emporio.errors import ConfigError
+
+DEFAULT_AGENT = "store"
 DEFAULT_REPLY_TIMEOUT_SECONDS = 60.0
-
-
-class ConfigError(Exception):
-    def __init__(self, setting: str, problem: str) -> None:
-        super().__init__(f"{setting}: {problem}")
-        self.setting = setting
 
 
 @dataclass(frozen=True)

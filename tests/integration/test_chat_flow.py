@@ -18,6 +18,9 @@ class RecordingAgent:
         self.calls.append((conversation_id, message))
         return AgentReply(f"Resposta para {message}")
 
+    def end_conversation(self, conversation_id):
+        pass
+
 
 @pytest.fixture
 def recording_agent(monkeypatch):
@@ -64,6 +67,7 @@ def test_new_conversation_clears_messages_and_changes_the_identifier(open_app, r
     send(app, "Primeira")
 
     app.button(key="new_conversation").click().run()
+    app.button(key="confirm_new_conversation").click().run()
 
     assert len(app.text) == 0
     send(app, "Segunda")
@@ -117,6 +121,17 @@ def test_shortened_edit_is_sent(open_app, recording_agent):
     app.button(key="send_draft").click().run()
 
     assert [message for _, message in recording_agent.calls] == ["Mensagem curta"]
+    assert len(app.error) == 0
+    assert len(app.text_area) == 0
+
+
+def test_blank_edit_closes_the_panel(open_app, recording_agent):
+    app = send(open_app(), "a" * (MAX_MESSAGE_LENGTH + 1))
+
+    app.text_area[0].set_value("   ")
+    app.button(key="send_draft").click().run()
+
+    assert recording_agent.calls == []
     assert len(app.error) == 0
     assert len(app.text_area) == 0
 

@@ -1,6 +1,7 @@
 # Quickstart: Validate the Chat
 
-Proves the feature works end to end. It needs no model, API key or store data.
+Proves the feature works end to end. It needs no model, API key or store data, as long as the chat runs with
+`EMPORIO_AGENT=stand_in`, since the store agent became the default in spec 002.
 
 ## Prerequisites
 

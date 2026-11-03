@@ -16,7 +16,7 @@ personal data masked, so they can be continued after a page reload.
 
 **Language/Version**: Python 3.13, managed with uv
 
-**Primary Dependencies**: Adds `pydantic-ai-slim[openai]>=2.64,<3` and `httpx>=0.28,<1`. Existing: Streamlit, python-dotenv.
+**Primary Dependencies**: Adds `pydantic-ai-slim[openai]>=2.64,<3` and `httpx2>=2.12,<3`. Existing: Streamlit, python-dotenv.
 
 **Storage**: `data/emporio.sqlite` gains conversation and complaint tables. `data/policies.sqlite` stays read-only.
 

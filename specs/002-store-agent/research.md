@@ -39,7 +39,8 @@ conversation also prevents that.
 ## 4. Models and thinking
 
 **Decision**: `FallbackModel` with `qwen3:8b` through `OllamaProvider`, then OpenRouter. Thinking stays on. Cloudflare
-headers go on the Ollama client only.
+headers go on the Ollama client only. The clients use `httpx2`, because Pydantic AI 2.64 deprecates `httpx` for these
+providers.
 
 **Rationale**: **Verified**: with the primary unreachable, the fallback answered through the tool in 4.6 s. With
 thinking off the reply took 3.7 s instead of 7.3 s, but stated a made-up price of R$ 1,000 instead of the tool's
@@ -73,6 +74,10 @@ result.
 
 **Rationale**: **Verified** that history survives a JSON round trip and continues correctly. A tool can't replace the
 history of the run it's part of, so returning a transcript is the direct way to reach the earlier conversation.
+
+`get_order_status` also includes the open conversation in its result after a successful check. **Verified**: left to the
+model, `qwen3:8b` called `find_open_conversation` in only 1 of 5 runs, even when the verified result told it to.
+`find_open_conversation` stays as the tool that does the lookup.
 
 **System user ID**: A random ID in a table that maps it to `customer_id`, in the same database.
 
@@ -157,4 +162,24 @@ customer would get a crash instead of the friendly message.
 
 **Alternatives considered**: A larger hierarchy now, which would add classes nobody handles differently. More can be
 added when a caller needs to tell two failures apart. A separate branch later, which would mean reworking the agent code.
+
+## 15. Streamlit's Stop button (FR-021)
+
+**Finding**: **Verified** in Chrome that with `client.toolbarMode = "minimal"`, used by both `make run` and `make run-dev`, no
+Stop control exists during a wait. It appears only with the developer toolbar. So nobody can press it, and no fix is needed.
+
+## 16. Results with all eight tools
+
+**Measured** on 2026-11-02 with `make agent-check` (22 checks), three runs on each model:
+
+| Model | Checks passed | Reply time, most checks |
+|---|---|---|
+| `qwen3:8b` | 20, 22 and 21 of 22 | Median 5.5 s, slowest 24.7 s |
+| `openai/gpt-4o-mini` | 22, 21 and 21 of 22 | Median 2.1 s, slowest 7.4 s |
+
+The timing leaves out checks whose names contain a colon, because of how they were summarized. Replies stayed well under the
+60-second limit, including a three-message check at up to 35.5 s in total. No check leaked an order.
+
+The quickstart in Chrome on `qwen3:8b` passed 20 of 21: the failure was a complaint reply claiming it was registered without
+calling the tool. The misses come from the model and vary between runs, so the checks stay strict instead of being loosened.
 

@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 
 import streamlit as st
@@ -10,10 +11,12 @@ from emporio.chat.conversation import (
     answer_pending,
     new_conversation,
     submit,
+    submit_edit,
 )
 from emporio.chat.details_view import render_details
 from emporio.chat.utils import waiting_message
-from emporio.config import ConfigError, Settings, load_settings
+from emporio.config import Settings, load_settings
+from emporio.errors import ConfigError
 from emporio.safety.sanitize import Sanitizer, load_private_values
 
 
@@ -33,12 +36,32 @@ def load_runtime() -> Runtime:
     return Runtime(settings, agent, sanitizer)
 
 
-def render_header(conversation: Conversation) -> None:
+def start_new_conversation(conversation: Conversation, agent: Agent) -> None:
+    agent.end_conversation(conversation.id)
+    st.session_state.conversation = new_conversation()
+
+
+@st.dialog("Começar uma nova conversa?")
+def confirm_new_conversation(conversation: Conversation, agent: Agent) -> None:
+    st.text("A conversa atual será encerrada e as mensagens sairão da tela.")
+    confirm_column, cancel_column = st.columns(2)
+    confirmed = confirm_column.button(
+        "Confirmar",
+        key="confirm_new_conversation",
+        type="primary",
+        on_click=start_new_conversation,
+        args=(conversation, agent),
+    )
+    cancelled = cancel_column.button("Cancelar", key="cancel_new_conversation")
+    if confirmed or cancelled:
+        st.rerun()
+
+
+def render_header(conversation: Conversation, agent: Agent) -> None:
     st.title("Empório da Música")
     st.caption("Atendimento por mensagem. Pergunte sobre produtos, pedidos e políticas da loja.")
     if st.button("Nova conversa", key="new_conversation", disabled=conversation.state != "idle"):
-        st.session_state.conversation = new_conversation()
-        st.rerun()
+        confirm_new_conversation(conversation, agent)
 
 
 def render_turns(conversation: Conversation, *, troubleshooting: bool) -> None:
@@ -64,7 +87,7 @@ def render_rejected_draft(conversation: Conversation) -> None:
     edited = st.text_area("Edite sua mensagem", value=draft, height=200, key=f"draft_{hash(draft)}")
     send_column, discard_column = st.columns(2)
     if send_column.button("Enviar", key="send_draft", type="primary"):
-        submit(conversation, edited)
+        submit_edit(conversation, edited)
         st.rerun()
     if discard_column.button("Descartar", key="discard_draft"):
         conversation.rejected_draft = None
@@ -97,6 +120,7 @@ def answer_waiting_turn(conversation: Conversation, runtime: Runtime) -> None:
 
 def main() -> None:
     st.set_page_config(page_title="Empório da Música")
+    logging.basicConfig(level=logging.WARNING, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     try:
         runtime = load_runtime()
     except ConfigError as error:
@@ -108,7 +132,7 @@ def main() -> None:
     conversation: Conversation = st.session_state.conversation
     waiting = conversation.state == "waiting"
 
-    render_header(conversation)
+    render_header(conversation, runtime.agent)
     if runtime.agent.is_simulated:
         st.info("As respostas são simuladas e não vêm do assistente real.")
     render_turns(conversation, troubleshooting=runtime.settings.troubleshooting)

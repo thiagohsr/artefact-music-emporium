@@ -7,7 +7,7 @@ result, and expected outcomes are data, not exceptions.
 |---|---|---|
 | `search_products` | `text`, `category`, `min_price_brl`, `max_price_brl`, `in_stock_only`, all optional | Up to 10 products: name, category, price, stock, status, promotion |
 | `get_product` | `name` | One product with specs and promotion, a list of close matches, or not found |
-| `payment_terms` | `method`, plus `product_name` or `amount_brl`, plus `installments` | See below |
+| `payment_terms` | `installments` (required), `product_name` or `amount_brl`, and `method` (`credit` by default) | See below |
 | `policy_lookup` | `question` | Up to 3 customer sections: number, title, text |
 | `get_order_status` | `order_number`, `phone`, `email` | The order, or one fixed "not verified" result |
 | `find_open_conversation` | None | The masked transcript, or none |
@@ -39,11 +39,14 @@ Returns the final price, the installment value, the minimum that applies, `allow
 ## get_order_status
 
 - All three values are required by the tool's signature, so the model must ask for what's missing.
+- `order_number` accepts the order number or the tracking code, ignoring case and separators.
 - The order is looked up first, then the phone (digits only) and email (ignoring case) are compared with that order's
   customer. Any failure gives the same result, including an order that doesn't exist.
-- On success it returns status, order date, stored total, payment method, items, tracking code, delivery estimate and
+- On success it returns status, stored total, payment method, items, tracking code, delivery estimate and
   days since that estimate, and it records the customer in the session.
 - The stored total is returned as it is, never recalculated.
+- The order date isn't returned. **Verified**: with it, `qwen3:8b` said "entregue em" that date in 5 of 5 runs, even when told
+  not to, and the data has no actual delivery date.
 
 ## Agent interface
 
