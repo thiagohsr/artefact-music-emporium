@@ -45,6 +45,8 @@ def test_twelve_installments(conn):
         "installments": 12,
         "installment_brl": 183.25,
         "minimum_installment_brl": 100.0,
+        "max_installments": 12,
+        "max_installment_brl": 183.25,
         "allowed": True,
         "reason": None,
     }
