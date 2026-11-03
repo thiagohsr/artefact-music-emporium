@@ -157,7 +157,8 @@ TOOLS = (
             "Use quando o cliente procura opções, ou para achar um produto semelhante em estoque. Filtra por texto, "
             "categoria, faixa de preço e estoque. Categorias: Baixos, Baterias e Percussão, Cordas Orquestrais, "
             "Guitarras, Instrumentos de Sopro (Madeiras), Instrumentos de Sopro (Metais), Teclados e Pianos, "
-            "Ukuleles, Violões."
+            "Ukuleles, Violões. Devolve os mais baratos primeiro. Se shown for menor que total, a lista está incompleta: "
+            "diga ao cliente quantas opções ficaram de fora e ofereça refinar a busca."
         ),
     ),
     Tool(

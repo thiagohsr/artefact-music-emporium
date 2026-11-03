@@ -5,7 +5,7 @@ result, and expected outcomes are data, not exceptions.
 
 | Tool | Parameters | Result |
 |---|---|---|
-| `search_products` | `text`, `category`, `min_price_brl`, `max_price_brl`, `in_stock_only`, all optional | Up to 10 products: name, category, price, stock, status, promotion |
+| `search_products` | `text`, `category`, `min_price_brl`, `max_price_brl`, `in_stock_only`, all optional | Up to 10 products, cheapest first: name, category, price, stock, status, promotion. Also `total` and `shown`, so a cut-off list is never presented as complete |
 | `get_product` | `name` | One product with specs and promotion, a list of close matches, or not found |
 | `payment_terms` | `installments` (required), `product_name` or `amount_brl`, and `method` (`credit` by default) | See below |
 | `policy_lookup` | `question` | Up to 3 customer sections: number, title, text |
