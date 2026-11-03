@@ -75,3 +75,9 @@ def test_a_return_always_checks_the_rules_and_offers_only_what_they_allow(instru
     assert "mesmo que uma conversa anterior já fale disso" in instructions
     assert "ofereça só o que as regras trazem" in instructions
 
+
+def test_the_scope_is_closed_and_accessories_are_never_offered(instructions):
+    assert "Você não é um assistente geral" in instructions
+    assert "Todo o resto está fora do atendimento" in instructions
+    assert "Nunca os ofereça" in instructions
+
