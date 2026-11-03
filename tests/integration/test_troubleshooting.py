@@ -94,8 +94,8 @@ def test_failure_has_details_and_the_customer_text_stays_friendly(open_app):
     app = send(open_app(), "/erro")
 
     assert "Falha simulada" in page_text(app)
-    assert "Falha simulada" not in app.chat_message[1].text[0].value
-    assert "(67) 3341-4444" in app.chat_message[1].text[0].value
+    assert "Falha simulada" not in app.chat_message[1].markdown[0].value
+    assert "(67) 3341-4444" in app.chat_message[1].markdown[0].value
 
 
 def test_timeout_has_details(open_app, monkeypatch):

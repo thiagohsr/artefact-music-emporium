@@ -69,3 +69,29 @@ def test_business_hours(moment, is_open):
 )
 def test_closed_status_says_when_the_store_reopens(moment, reopens):
     assert reopens in store_status(moment)
+
+
+def test_a_return_always_checks_the_rules_and_offers_only_what_they_allow(instructions):
+    assert "mesmo que uma conversa anterior já fale disso" in instructions
+    assert "ofereça só o que as regras trazem" in instructions
+
+
+def test_the_scope_is_closed_and_accessories_are_never_offered(instructions):
+    assert "Você não é um assistente geral" in instructions
+    assert "Todo o resto está fora do atendimento" in instructions
+    assert "Nunca os ofereça" in instructions
+
+
+def test_replies_are_short_and_keep_tool_fields_out(instructions):
+    assert "Escreva como numa mensagem de WhatsApp" in instructions
+    assert "cite a parcela mínima só quando um parcelamento for recusado" in instructions
+
+
+def test_playing_and_tuning_advice_is_out_of_scope(instructions):
+    assert "dicas de como tocar, afinar ou consertar um instrumento" in instructions
+    assert "Dúvidas práticas" not in instructions
+
+
+def test_a_closed_store_never_postpones_a_lookup(instructions):
+    assert "nunca deixe uma consulta para quando a loja abrir" in instructions
+

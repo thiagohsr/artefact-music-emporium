@@ -6,7 +6,7 @@ from typing import Any
 
 NOT_VERIFIED = {
     "verified": False,
-    "message": "Não foi possível confirmar esses dados. Confira o número do pedido, o telefone e o e-mail.",
+    "message": "Não foi possível confirmar esses dados. Confira o código de rastreamento, o telefone e o e-mail.",
 }
 
 
@@ -18,6 +18,12 @@ class VerifiedCustomer:
     email: str
 
 
+# Manual sections 4.1 and 4.3 count from delivery, and 4.2 from the purchase.
+WITHDRAWAL_DAYS = 7
+PREFERENCE_EXCHANGE_DAYS = 7
+DEFECT_EXCHANGE_DAYS = 30
+
+
 def _digits(text: str) -> str:
     return re.sub(r"\D", "", text)
 
@@ -26,22 +32,38 @@ def _days_since(estimate: str | None, today: date) -> int | None:
     return (today - date.fromisoformat(estimate)).days if estimate else None
 
 
+def _returns(order: sqlite3.Row, today: date) -> dict[str, bool] | None:
+    """Worked out here, because the model misread the dates and offered windows that had closed."""
+    since_delivery = _days_since(order["estimated_delivery"], today)
+    if order["status"] != "delivered" or since_delivery is None:
+        return None
+    since_purchase = (today - date.fromisoformat(order["order_date"])).days
+    return {
+        "withdrawal_open": since_delivery <= WITHDRAWAL_DAYS,
+        "preference_exchange_open": since_delivery <= PREFERENCE_EXCHANGE_DAYS,
+        "defect_exchange_open": since_purchase <= DEFECT_EXCHANGE_DAYS,
+    }
+
+
 def get_order_status(
     conn: sqlite3.Connection,
-    order_number: str,
+    tracking_code: str,
     phone: str,
     email: str,
     today: date,
 ) -> tuple[dict[str, Any], VerifiedCustomer | None]:
-    """Starts from the order, because two customers share an email and an email alone identifies nobody."""
-    reference = re.sub(r"[\s#.-]", "", order_number).upper()
+    """Starts from the order, because two customers share an email and an email alone identifies nobody.
+
+    Only the tracking code finds an order: order IDs are sequential, so they're easy to guess.
+    """
+    code = re.sub(r"[\s#.-]", "", tracking_code).upper()
     order = conn.execute(
         """
         SELECT o.*, c.name, c.phone, c.email
         FROM orders o JOIN customers c USING (customer_id)
-        WHERE upper(o.tracking_code) = ? OR CAST(o.order_id AS TEXT) = ?
+        WHERE upper(o.tracking_code) = ?
         """,
-        (reference, reference),
+        (code,),
     ).fetchone()
     if (
         order is None
@@ -57,7 +79,6 @@ def get_order_status(
     result = {
         "verified": True,
         "customer_name": order["name"],
-        "order_number": order["order_id"],
         "status": order["status"],
         "total_brl": order["total_brl"],
         "payment_method": order["payment_method"],
@@ -65,6 +86,7 @@ def get_order_status(
         "tracking_code": order["tracking_code"],
         "estimated_delivery": order["estimated_delivery"],
         "days_since_estimate": _days_since(order["estimated_delivery"], today),
+        "returns": _returns(order, today),
     }
     customer = VerifiedCustomer(order["customer_id"], order["name"], order["phone"], order["email"])
     return result, customer

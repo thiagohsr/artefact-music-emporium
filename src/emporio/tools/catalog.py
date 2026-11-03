@@ -88,7 +88,8 @@ def search_products(
             continue
         found.append(product)
     found.sort(key=lambda product: product["price_brl"])
-    return {"total": len(found), "products": found[:MAX_RESULTS]}
+    shown = found[:MAX_RESULTS]
+    return {"total": len(found), "shown": len(shown), "products": shown}
 
 
 def get_product(conn: sqlite3.Connection, name: str) -> dict[str, Any]:

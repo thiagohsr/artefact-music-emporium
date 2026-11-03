@@ -5,11 +5,11 @@ result, and expected outcomes are data, not exceptions.
 
 | Tool | Parameters | Result |
 |---|---|---|
-| `search_products` | `text`, `category`, `min_price_brl`, `max_price_brl`, `in_stock_only`, all optional | Up to 10 products: name, category, price, stock, status, promotion |
+| `search_products` | `text`, `category`, `min_price_brl`, `max_price_brl`, `in_stock_only`, all optional | Up to 10 products, cheapest first: name, category, price, stock, status, promotion. Also `total` and `shown`, so a cut-off list is never presented as complete |
 | `get_product` | `name` | One product with specs and promotion, a list of close matches, or not found |
-| `payment_terms` | `installments` (required), `product_name` or `amount_brl`, and `method` (`credit` by default) | See below |
+| `payment_terms` | `installments` (required), `product_name` or `amount_brl`, and `method` (`credit` by default) | See below. Also `max_installments` and `max_installment_brl`, the most the price allows |
 | `policy_lookup` | `question` | Up to 3 customer sections: number, title, text |
-| `get_order_status` | `order_number`, `phone`, `email` | The order, or one fixed "not verified" result |
+| `get_order_status` | `tracking_code`, `phone`, `email` | The order, or one fixed "not verified" result |
 | `find_open_conversation` | None | The masked transcript, or none |
 | `register_complaint` | `summary` | Recorded, and the 24 business hours return time |
 | `finish_conversation` | None | Closed |
@@ -39,7 +39,8 @@ Returns the final price, the installment value, the minimum that applies, `allow
 ## get_order_status
 
 - All three values are required by the tool's signature, so the model must ask for what's missing.
-- `order_number` accepts the order number or the tracking code, ignoring case and separators.
+- A delivered order also has `returns`: whether the 7-day withdrawal and preference exchange windows, counted from the delivery estimate, and the 30-day defect exchange window, counted from the purchase, are still open.
+- `tracking_code` is the only way to find an order, ignoring case and separators. An order ID is never accepted, so an order with no code yet can't be looked up.
 - The order is looked up first, then the phone (digits only) and email (ignoring case) are compared with that order's
   customer. Any failure gives the same result, including an order that doesn't exist.
 - On success it returns status, stored total, payment method, items, tracking code, delivery estimate and

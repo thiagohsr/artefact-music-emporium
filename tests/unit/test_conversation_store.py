@@ -177,8 +177,8 @@ def scripted(call_order=None):
         text = next((p.content for p in last_request if isinstance(p, UserPromptPart)), "")
         returned = [p for p in last_request if isinstance(p, ToolReturnPart)]
         if text.startswith("pedido"):
-            _, number, phone, email = text.split("|")
-            return ModelResponse(parts=[ToolCallPart("get_order_status", {"order_number": number, "phone": phone, "email": email})])
+            _, code, phone, email = text.split("|")
+            return ModelResponse(parts=[ToolCallPart("get_order_status", {"tracking_code": code, "phone": phone, "email": email})])
         if returned and returned[0].tool_name == "get_order_status":
             previous = returned[0].content.get("previous_conversation", {})
             return ModelResponse(parts=[TextPart(str(previous.get("transcript", "nada")))])
@@ -195,7 +195,8 @@ def agent(store_db):
 
 def order_message(conn, order_id):
     customer = owner(conn, order_id)
-    return f"pedido|{order_id}|{customer['phone']}|{customer['email']}"
+    code = conn.execute("SELECT tracking_code FROM orders WHERE order_id = ?", (order_id,)).fetchone()[0]
+    return f"pedido|{code}|{customer['phone']}|{customer['email']}"
 
 
 def stored(conn):
@@ -258,7 +259,7 @@ def test_end_conversation_closes_the_stored_conversation(agent, conn):
 
 def test_a_second_customer_closes_the_first_and_clears_the_history(agent, conn):
     agent.respond("c1", order_message(conn, 1))
-    other = conn.execute("SELECT min(order_id) FROM orders WHERE customer_id <> (SELECT customer_id FROM orders WHERE order_id = 1)").fetchone()[0]
+    other = other_customers_order(conn)
 
     agent.respond("c1", order_message(conn, other))
     agent.respond("c1", "depois")
@@ -267,7 +268,7 @@ def test_a_second_customer_closes_the_first_and_clears_the_history(agent, conn):
     assert [row["status"] for row in rows] == ["closed", "open"]
     assert rows[0]["user_id"] != rows[1]["user_id"]
     assert owner(conn, 1)["email"].split("@")[0] not in rows[1]["messages"]
-    assert "pedido|1|" not in rows[1]["messages"]
+    assert "pedido|BRAB1234567BR|" not in rows[1]["messages"]
 
 
 def watching_agent(store_db, seen, fail=()):
@@ -285,7 +286,7 @@ def watching_agent(store_db, seen, fail=()):
 
 
 def other_customers_order(conn):
-    return conn.execute("SELECT min(order_id) FROM orders WHERE customer_id <> (SELECT customer_id FROM orders WHERE order_id = 1)").fetchone()[0]
+    return conn.execute("SELECT min(order_id) FROM orders WHERE tracking_code IS NOT NULL AND customer_id <> (SELECT customer_id FROM orders WHERE order_id = 1)").fetchone()[0]
 
 
 def test_requests_after_a_second_customer_verifies_have_no_trace_of_the_first(store_db, conn):
@@ -334,7 +335,7 @@ def test_the_same_customer_verifying_again_keeps_the_history(store_db, conn):
 
 
 def test_failed_verification_identifies_nobody(agent, conn):
-    agent.respond("c1", "pedido|1|(67) 90000-0000|wrong@example.com")
+    agent.respond("c1", "pedido|BRAB1234567BR|(67) 90000-0000|wrong@example.com")
 
     assert stored(conn) == []
 

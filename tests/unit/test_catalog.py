@@ -124,3 +124,15 @@ def test_inactive_promotion_is_ignored(conn):
 )
 def test_availability_follows_status_before_stock(conn, name, availability):
     assert get_product(conn, name)["product"]["availability"] == availability
+
+
+def test_search_says_how_many_results_it_left_out(conn):
+    result = search_products(conn, category="Violões", max_price_brl=1000)
+
+    assert result["total"] > result["shown"] == len(result["products"]) == 10
+
+
+def test_search_shows_every_result_under_the_limit(conn):
+    result = search_products(conn, text="Takamine GD20")
+
+    assert result["total"] == result["shown"] == len(result["products"])

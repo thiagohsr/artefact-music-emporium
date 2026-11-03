@@ -94,9 +94,9 @@ def _policy_lookup(context: RunContext[Turn], question: str) -> dict[str, Any]:
     return policy_lookup(question, context.deps.settings)
 
 
-def _get_order_status(context: RunContext[Turn], order_number: str, phone: str, email: str) -> dict[str, Any]:
+def _get_order_status(context: RunContext[Turn], tracking_code: str, phone: str, email: str) -> dict[str, Any]:
     with read_connection(context.deps.db_path) as conn:
-        result, customer = get_order_status(conn, order_number, phone, email, context.deps.now.date())
+        result, customer = get_order_status(conn, tracking_code, phone, email, context.deps.now.date())
     if customer is None:
         return result
     _identify(context.deps, customer)
@@ -157,7 +157,8 @@ TOOLS = (
             "Use quando o cliente procura opções, ou para achar um produto semelhante em estoque. Filtra por texto, "
             "categoria, faixa de preço e estoque. Categorias: Baixos, Baterias e Percussão, Cordas Orquestrais, "
             "Guitarras, Instrumentos de Sopro (Madeiras), Instrumentos de Sopro (Metais), Teclados e Pianos, "
-            "Ukuleles, Violões."
+            "Ukuleles, Violões. Devolve os mais baratos primeiro. Se shown for menor que total, a lista está incompleta: "
+            "diga ao cliente quantas opções ficaram de fora e ofereça refinar a busca."
         ),
     ),
     Tool(
@@ -171,7 +172,9 @@ TOOLS = (
         description=(
             "Use quando o cliente pergunta como pagar, sobre parcelas ou descontos. Informe product_name ou amount_brl, "
             "e installments com o número de parcelas pedido, ou 1 para pagamento à vista. method é credit por padrão, "
-            "ou pix, debit ou boleto. Devolve o preço final, o valor da parcela, a parcela mínima e se é permitido."
+            "ou pix, debit ou boleto. Devolve o preço final, o valor da parcela, a parcela mínima e se é permitido. "
+            "Se o cliente perguntar em quantas vezes pode parcelar, use installments 1 e responda com max_installments "
+            "e max_installment_brl, sem perguntar quantas parcelas ele quer."
         ),
     ),
     Tool(
@@ -183,13 +186,14 @@ TOOLS = (
         _get_order_status,
         name="get_order_status",
         description=(
-            "Use quando o cliente pergunta sobre um pedido. Em order_number, informe o número do pedido ou o código de "
-            "rastreamento (como BRAB1234567BR). Exige também o telefone e o e-mail informados pelo cliente nesta "
-            "conversa: nunca invente nem complete esses dados, peça o que faltar. Status: pending "
+            "Use quando o cliente pergunta sobre um pedido. Em tracking_code, informe o código de rastreamento que o cliente "
+            "informou: o número do pedido nunca é aceito. Exige também o telefone e o e-mail informados pelo cliente nesta "
+            "conversa: nunca invente nem complete esses três dados. Se faltar algum, não chame esta ferramenta e peça o que faltar. Status: pending "
             "(pendente), confirmed (confirmado), shipped (enviado), delivered (entregue), cancelled (cancelado). "
             "estimated_delivery é a previsão de entrega, a única data de entrega conhecida: não há data real de "
             "entrega, então nunca diga em que dia o pedido foi entregue. "
-            "days_since_estimate conta os dias desde essa previsão."
+            "days_since_estimate conta os dias desde essa previsão. returns diz quais prazos de devolução e troca ainda estão "
+            "abertos: nunca ofereça um prazo fechado. Depois do prazo de troca por defeito, a garantia é com o fabricante."
         ),
     ),
     Tool(
