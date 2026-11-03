@@ -1,4 +1,5 @@
 import asyncio
+import json
 import re
 import sqlite3
 import threading
@@ -101,7 +102,19 @@ def serialize(messages: Sequence[ModelMessage], values: Sequence[str]) -> str:
                 continue
             message = replace(message, parts=parts)
         kept.append(message)
-    return mask(ModelMessagesTypeAdapter.dump_json(kept).decode(), values)
+    data = json.loads(ModelMessagesTypeAdapter.dump_json(kept))
+    return json.dumps(_mask_strings(data, values), ensure_ascii=False)
+
+
+def _mask_strings(value: Any, values: Sequence[str]) -> Any:
+    """Masks each string inside the data, because masking the JSON text can cut through an escape like a line break."""
+    if isinstance(value, str):
+        return mask(value, values)
+    if isinstance(value, list):
+        return [_mask_strings(item, values) for item in value]
+    if isinstance(value, dict):
+        return {key: _mask_strings(item, values) for key, item in value.items()}
+    return value
 
 
 def save(
