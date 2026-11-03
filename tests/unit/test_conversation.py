@@ -4,13 +4,16 @@ import pytest
 
 from emporio.agent.contract import AgentReply, ReplyDetails, Step
 from emporio.chat.conversation import (
+    CONVERSATION_LIMIT,
     FAILURE_ANSWER,
     MAX_MESSAGE_LENGTH,
+    ConversationRegistry,
     answer_pending,
     new_conversation,
     submit,
     submit_edit,
 )
+from emporio.data.conversation_store import SESSION_LIMIT
 from emporio.safety.sanitize import REDACTED, Sanitizer
 
 PLANTED = "planted-private-value"
@@ -343,3 +346,43 @@ def test_edit_with_text_works_like_a_message():
     assert submit_edit(conversation, "curta") == "accepted"
     assert conversation.turns[0].message == "curta"
 
+
+def test_the_registry_finds_a_conversation_until_its_limit():
+    registry = ConversationRegistry()
+    conversation = registry.start()
+
+    assert registry.find(conversation.id) is conversation
+    conversation.last_message_at -= CONVERSATION_LIMIT
+
+    assert registry.find(conversation.id) is None
+
+
+def test_the_registry_finds_nothing_without_a_known_link():
+    registry = ConversationRegistry()
+    registry.start()
+
+    assert registry.find(None) is None
+    assert registry.find("inventado") is None
+
+
+def test_a_removed_conversation_cannot_be_found():
+    registry = ConversationRegistry()
+    conversation = registry.start()
+
+    registry.remove(conversation.id)
+
+    assert registry.find(conversation.id) is None
+
+
+def test_a_message_keeps_a_conversation_within_its_limit():
+    registry = ConversationRegistry()
+    conversation = registry.start()
+    conversation.last_message_at -= CONVERSATION_LIMIT
+
+    assert submit(conversation, "Olá") == "accepted"
+
+    assert registry.find(conversation.id) is conversation
+
+
+def test_the_page_limit_matches_the_agents_session_limit():
+    assert CONVERSATION_LIMIT == SESSION_LIMIT

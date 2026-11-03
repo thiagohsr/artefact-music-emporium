@@ -8,8 +8,8 @@ from emporio.agent.factory import create_agent
 from emporio.chat.conversation import (
     MAX_MESSAGE_LENGTH,
     Conversation,
+    ConversationRegistry,
     answer_pending,
-    new_conversation,
     submit,
     submit_edit,
 )
@@ -19,12 +19,15 @@ from emporio.config import Settings, load_settings
 from emporio.errors import ConfigError
 from emporio.safety.sanitize import Sanitizer, load_private_values
 
+LINK_PARAM = "conversa"
+
 
 @dataclass(frozen=True)
 class Runtime:
     settings: Settings
     agent: Agent
     sanitizer: Sanitizer
+    conversations: ConversationRegistry
 
 
 @st.cache_resource(show_spinner=False)
@@ -33,16 +36,26 @@ def load_runtime() -> Runtime:
     settings = load_settings()
     agent = create_agent(settings)
     sanitizer = Sanitizer([*load_private_values(), *getattr(agent, "private_values", ())])
-    return Runtime(settings, agent, sanitizer)
+    return Runtime(settings, agent, sanitizer, ConversationRegistry())
 
 
-def start_new_conversation(conversation: Conversation, agent: Agent) -> None:
-    agent.end_conversation(conversation.id)
-    st.session_state.conversation = new_conversation()
+def current_conversation(registry: ConversationRegistry) -> Conversation:
+    if "conversation" not in st.session_state:
+        link = st.query_params.get(LINK_PARAM)
+        st.session_state.conversation = registry.find(link) or registry.start()
+    conversation: Conversation = st.session_state.conversation
+    st.query_params[LINK_PARAM] = conversation.id
+    return conversation
+
+
+def start_new_conversation(conversation: Conversation, runtime: Runtime) -> None:
+    runtime.agent.end_conversation(conversation.id)
+    runtime.conversations.remove(conversation.id)
+    st.session_state.conversation = runtime.conversations.start()
 
 
 @st.dialog("Começar uma nova conversa?")
-def confirm_new_conversation(conversation: Conversation, agent: Agent) -> None:
+def confirm_new_conversation(conversation: Conversation, runtime: Runtime) -> None:
     st.text("A conversa atual será encerrada e as mensagens sairão da tela.")
     confirm_column, cancel_column = st.columns(2)
     confirmed = confirm_column.button(
@@ -50,18 +63,18 @@ def confirm_new_conversation(conversation: Conversation, agent: Agent) -> None:
         key="confirm_new_conversation",
         type="primary",
         on_click=start_new_conversation,
-        args=(conversation, agent),
+        args=(conversation, runtime),
     )
     cancelled = cancel_column.button("Cancelar", key="cancel_new_conversation")
     if confirmed or cancelled:
         st.rerun()
 
 
-def render_header(conversation: Conversation, agent: Agent) -> None:
+def render_header(conversation: Conversation, runtime: Runtime) -> None:
     st.title("Empório da Música")
     st.caption("Atendimento por mensagem. Pergunte sobre produtos, pedidos e políticas da loja.")
     if st.button("Nova conversa", key="new_conversation", disabled=conversation.state != "idle"):
-        confirm_new_conversation(conversation, agent)
+        confirm_new_conversation(conversation, runtime)
 
 
 def render_turns(conversation: Conversation, *, troubleshooting: bool) -> None:
@@ -127,12 +140,10 @@ def main() -> None:
         st.title("Empório da Música")
         st.error(f"The application could not start. Check this setting. {error}")
         st.stop()
-    if "conversation" not in st.session_state:
-        st.session_state.conversation = new_conversation()
-    conversation: Conversation = st.session_state.conversation
+    conversation = current_conversation(runtime.conversations)
     waiting = conversation.state == "waiting"
 
-    render_header(conversation, runtime.agent)
+    render_header(conversation, runtime)
     if runtime.agent.is_simulated:
         st.info("As respostas são simuladas e não vêm do assistente real.")
     render_turns(conversation, troubleshooting=runtime.settings.troubleshooting)

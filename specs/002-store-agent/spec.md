@@ -8,6 +8,8 @@
 
 **Input**: User description: "Customer service agent for Empório da Música that replaces the stand-in behind the existing Agent interface. One agent with a plain tool loop and typed tools for products, order status, payment terms and policy lookup. Calculations are done in tools, not by the model. Persona and per-domain guidance in the prompt, with the store's tone. Primary model on the self-hosted server with OpenRouter as fallback. Order access requires the order number plus both the phone and the email on that order. Identified customers have persistent conversations held by system user ID with their information obfuscated; other conversations last for the session. A session ends on the new conversation button or after 30 minutes without a message. Includes the exception handling and code review improvements recorded in docs/pending-updates.md."
 
+**Amended 2026-11-03**: a page reload now keeps the conversation, through a link in the page's address. The reload scenarios below now describe opening the chat without that link, such as in a new tab.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Be served in the store's voice and get correct answers (Priority: P1)
