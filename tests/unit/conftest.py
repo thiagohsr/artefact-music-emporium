@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).parents[2] / "scripts"))
+sys.path.insert(0, str(Path(__file__).parents[2] / "evals"))
 
 from seed_db import CSV_DIR, seed
 

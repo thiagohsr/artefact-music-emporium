@@ -6,6 +6,7 @@ import pytest
 from emporio.tools.orders import NOT_VERIFIED, get_order_status
 
 TODAY = date(2025, 11, 1)
+CODE = "BRAB1234567BR"
 
 
 @pytest.fixture
@@ -24,7 +25,7 @@ def owner(conn, order_id):
 def test_correct_details_return_the_order(conn):
     customer = owner(conn, 1)
 
-    result, verified = get_order_status(conn, "1", customer["phone"], customer["email"], TODAY)
+    result, verified = get_order_status(conn, CODE, customer["phone"], customer["email"], TODAY)
 
     assert result["verified"] is True
     assert result["status"] == "delivered"
@@ -45,7 +46,7 @@ def test_phone_compares_by_digits_and_email_ignores_case(conn):
     customer = owner(conn, 1)
     digits = "".join(c for c in customer["phone"] if c.isdigit())
 
-    result, _ = get_order_status(conn, "#1", digits, f"  {customer['email'].upper()} ", TODAY)
+    result, _ = get_order_status(conn, f" {CODE} ", digits, f"  {customer['email'].upper()} ", TODAY)
 
     assert result["verified"] is True
 
@@ -53,11 +54,12 @@ def test_phone_compares_by_digits_and_email_ignores_case(conn):
 @pytest.mark.parametrize(
     ("order", "phone", "email"),
     [
-        ("1", "(67) 90000-0000", None),
-        ("1", None, "wrong@example.com"),
-        ("1", "", None),
-        ("1", None, ""),
-        ("99999", None, None),
+        (CODE, "(67) 90000-0000", None),
+        (CODE, None, "wrong@example.com"),
+        (CODE, "", None),
+        (CODE, None, ""),
+        ("BRZZ9999999BR", None, None),
+        ("", None, None),
         ("not a number", None, None),
     ],
 )
@@ -77,34 +79,17 @@ def test_the_failure_reveals_nothing_about_the_customer_or_order(conn):
 def test_customers_sharing_an_email_cannot_reach_each_others_orders(conn):
     shared = {row["customer_id"]: row for row in conn.execute("SELECT * FROM customers WHERE customer_id IN (11, 43)")}
     assert shared[11]["email"] == shared[43]["email"]
-    orders = conn.execute("SELECT order_id, customer_id FROM orders WHERE customer_id IN (11, 43)").fetchall()
-    assert orders
+    conn.execute("UPDATE orders SET tracking_code = 'BRZZ1111111BR' WHERE customer_id = 11")
 
-    for order in orders:
-        other = shared[43 if order["customer_id"] == 11 else 11]
-        result, verified = get_order_status(conn, str(order["order_id"]), other["phone"], other["email"], TODAY)
-        assert result == NOT_VERIFIED
-        assert verified is None
+    assert get_order_status(conn, "BRZZ1111111BR", shared[43]["phone"], shared[43]["email"], TODAY) == (NOT_VERIFIED, None)
 
 
-@pytest.mark.parametrize(("order_id", "total"), [(3, 3450.0), (20, 1400.0)])
-def test_stored_total_is_never_recalculated(conn, order_id, total):
-    customer = owner(conn, order_id)
+def test_stored_total_is_never_recalculated(conn):
+    customer = owner(conn, 3)
 
-    result, _ = get_order_status(conn, str(order_id), customer["phone"], customer["email"], TODAY)
+    result, _ = get_order_status(conn, "BRDZ4561230BR", customer["phone"], customer["email"], TODAY)
 
-    assert result["total_brl"] == total
-
-
-def test_order_without_an_estimate_has_no_day_count(conn):
-    row = conn.execute("SELECT order_id FROM orders WHERE estimated_delivery IS NULL LIMIT 1").fetchone()
-    if row is None:
-        pytest.skip("every order has an estimate in this data")
-    customer = owner(conn, row["order_id"])
-
-    result, _ = get_order_status(conn, str(row["order_id"]), customer["phone"], customer["email"], TODAY)
-
-    assert result["days_since_estimate"] is None
+    assert result["total_brl"] == 3450.0
 
 
 TRACKING_CODES = (
@@ -142,7 +127,6 @@ def test_a_tracking_code_finds_its_order(conn, code):
     result, verified = get_order_status(conn, code, customer["phone"], customer["email"], TODAY)
 
     assert result["verified"] is True
-    assert result["order_number"] == customer["order_id"]
     assert result["tracking_code"] == code
     assert verified is not None
 
@@ -166,9 +150,46 @@ def test_a_tracking_code_with_another_customers_details_gives_the_same_failure(c
     assert get_order_status(conn, code, customer["phone"], other["email"], TODAY) == (NOT_VERIFIED, None)
 
 
-def test_the_digits_of_a_code_are_not_read_as_an_order_number(conn):
+def test_the_digits_of_a_code_do_not_find_an_order(conn):
     customer = owner(conn, 1)
 
     assert get_order_status(conn, "BRXX0000001BR", customer["phone"], customer["email"], TODAY) == (NOT_VERIFIED, None)
     assert get_order_status(conn, "A1", customer["phone"], customer["email"], TODAY) == (NOT_VERIFIED, None)
 
+
+
+@pytest.mark.parametrize("order_id", range(1, 21))
+def test_an_order_id_never_finds_an_order(conn, order_id):
+    customer = owner(conn, order_id)
+
+    for written in (str(order_id), f"#{order_id}", f"{order_id:03d}"):
+        assert get_order_status(conn, written, customer["phone"], customer["email"], TODAY) == (NOT_VERIFIED, None)
+
+
+def returns_for(conn, code, today):
+    customer = owner_by_code(conn, code)
+    return get_order_status(conn, code, customer["phone"], customer["email"], today)[0]["returns"]
+
+
+def test_every_window_is_open_within_its_days(conn):
+    assert returns_for(conn, "BRAB1234567BR", date(2025, 11, 1)) == {
+        "withdrawal_open": True,
+        "preference_exchange_open": True,
+        "defect_exchange_open": True,
+    }
+
+
+def test_withdrawal_and_preference_close_after_7_days_from_the_delivery_estimate(conn):
+    returns = returns_for(conn, "BRAB1234567BR", date(2025, 11, 2))
+
+    assert returns["withdrawal_open"] is False
+    assert returns["preference_exchange_open"] is False
+    assert returns["defect_exchange_open"] is True
+
+
+def test_a_defect_exchange_closes_after_30_days_from_the_purchase(conn):
+    assert returns_for(conn, "BRAB1234567BR", date(2025, 11, 15))["defect_exchange_open"] is False
+
+
+def test_an_order_not_delivered_yet_has_no_return_windows(conn):
+    assert returns_for(conn, "BRJL5544332BR", date(2026, 3, 1)) is None

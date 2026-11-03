@@ -4,6 +4,7 @@ import time
 import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
+from datetime import UTC, datetime, timedelta
 from typing import Literal
 
 from emporio.agent.contract import Agent, AgentReply, ReplyDetails, is_valid_details
@@ -14,6 +15,8 @@ logger = logging.getLogger(__name__)
 
 MAX_MESSAGE_LENGTH = 2000
 WAIT_TICK_SECONDS = 0.1
+# Matches the agent's session limit, so a restored page never outlives what the agent remembers.
+CONVERSATION_LIMIT = timedelta(minutes=30)
 FAILURE_ANSWER = (
     "Desculpe, não consegui responder agora. Tente novamente ou fale com a gente pelo WhatsApp "
     "(67) 3341-4444 ou (67) 3321-4500, ou pelo e-mail contato@emporiodamusica.com.br."
@@ -41,10 +44,37 @@ class Conversation:
     state: Literal["idle", "waiting"] = "idle"
     rejected_draft: str | None = None
     pending_call: "_PendingCall | None" = None
+    last_message_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 def new_conversation() -> Conversation:
     return Conversation(id=uuid.uuid4().hex)
+
+
+class ConversationRegistry:
+    """Streamlit's session state doesn't survive a page reload, so this lets the page's link find it again."""
+
+    def __init__(self) -> None:
+        self._conversations: dict[str, Conversation] = {}
+        self._lock = threading.Lock()
+
+    def start(self) -> Conversation:
+        conversation = new_conversation()
+        with self._lock:
+            self._conversations[conversation.id] = conversation
+        return conversation
+
+    def find(self, conversation_id: str | None) -> Conversation | None:
+        limit = datetime.now(UTC) - CONVERSATION_LIMIT
+        with self._lock:
+            self._conversations = {
+                key: value for key, value in self._conversations.items() if value.last_message_at > limit
+            }
+            return self._conversations.get(conversation_id or "")
+
+    def remove(self, conversation_id: str) -> None:
+        with self._lock:
+            self._conversations.pop(conversation_id, None)
 
 
 def submit(conversation: Conversation, text: str) -> SubmitResult:
@@ -58,6 +88,7 @@ def submit(conversation: Conversation, text: str) -> SubmitResult:
         return "too_long"
     conversation.rejected_draft = None
     conversation.turns.append(Turn(message=message))
+    conversation.last_message_at = datetime.now(UTC)
     conversation.state = "waiting"
     return "accepted"
 

@@ -48,7 +48,6 @@ class Session:
     customer: Any = None
     user_id: str | None = None
     stored_id: str | None = None
-    history_reset: bool = False
     lock: asyncio.Lock = field(default_factory=asyncio.Lock)
 
     def is_over(self, now: datetime) -> bool:

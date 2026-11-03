@@ -9,7 +9,7 @@ VENV_IS_VALID := test -f $(VENV)/pyvenv.cfg && $(VENV_PYTHON) -c \
 	>/dev/null 2>&1
 
 .DEFAULT_GOAL := help
-.PHONY: help check-uv check-venv venv setup shell lock db db-reset policy-index policy-check agent-check run run-dev test speckit-check clean reset
+.PHONY: help check-uv check-venv venv setup shell lock db db-reset policy-index policy-check agent-check evals run run-dev test speckit-check clean reset
 
 help: ## Show available commands
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z_-]+:.*## / {printf "  %-14s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -56,6 +56,9 @@ policy-check: setup ## Score policy retrieval against the gold questions
 
 agent-check: setup db ## Run the acceptance questions on the real model (needs a provider)
 	@. $(VENV)/bin/activate && python scripts/check_agent.py
+
+evals: setup db ## Score the agent on the evaluation cases, repeated (needs a provider)
+	@. $(VENV)/bin/activate && python evals/run.py
 
 run: setup db ## Start the chat
 	@. $(VENV)/bin/activate && streamlit run src/emporio/chat/app.py

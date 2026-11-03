@@ -12,8 +12,9 @@ os.environ.setdefault("PYDANTIC_AI_NO_BANNER", "1")
 
 from pydantic_ai import Agent as PydanticAgent
 from pydantic_ai import RunContext, Tool
+from pydantic_ai.capabilities import Hooks
 from pydantic_ai.exceptions import FallbackExceptionGroup, ModelAPIError
-from pydantic_ai.models import Model
+from pydantic_ai.models import Model, ModelRequestContext
 
 from emporio.agent.contract import AgentReply
 from emporio.agent.store.prompt import STORE_ZONE, build_instructions, load_guidance
@@ -51,6 +52,14 @@ class Turn:
     db_path: Path
     settings: Mapping[str, str]
     now: datetime
+    history_length: int = 0
+    customer_changed: bool = False
+
+
+async def _only_current_customer(context: RunContext[Turn], request: ModelRequestContext) -> ModelRequestContext:
+    if context.deps.customer_changed:
+        request.messages = request.messages[context.deps.history_length :]
+    return request
 
 
 def _search_products(
@@ -85,9 +94,9 @@ def _policy_lookup(context: RunContext[Turn], question: str) -> dict[str, Any]:
     return policy_lookup(question, context.deps.settings)
 
 
-def _get_order_status(context: RunContext[Turn], order_number: str, phone: str, email: str) -> dict[str, Any]:
+def _get_order_status(context: RunContext[Turn], tracking_code: str, phone: str, email: str) -> dict[str, Any]:
     with read_connection(context.deps.db_path) as conn:
-        result, customer = get_order_status(conn, order_number, phone, email, context.deps.now.date())
+        result, customer = get_order_status(conn, tracking_code, phone, email, context.deps.now.date())
     if customer is None:
         return result
     _identify(context.deps, customer)
@@ -117,7 +126,9 @@ def _identify(turn: Turn, customer: VerifiedCustomer) -> None:
             if session.stored_id:
                 close(conn, session.stored_id)
             session.stored_id = None
-            session.history_reset = True
+            # Cleared now, not after the run, so a failed reply can't hand this history to the next turn.
+            session.history = []
+            turn.customer_changed = True
     session.customer = customer
     session.user_id = user_id
 
@@ -146,7 +157,8 @@ TOOLS = (
             "Use quando o cliente procura opções, ou para achar um produto semelhante em estoque. Filtra por texto, "
             "categoria, faixa de preço e estoque. Categorias: Baixos, Baterias e Percussão, Cordas Orquestrais, "
             "Guitarras, Instrumentos de Sopro (Madeiras), Instrumentos de Sopro (Metais), Teclados e Pianos, "
-            "Ukuleles, Violões."
+            "Ukuleles, Violões. Devolve os mais baratos primeiro. Se shown for menor que total, a lista está incompleta: "
+            "diga ao cliente quantas opções ficaram de fora e ofereça refinar a busca."
         ),
     ),
     Tool(
@@ -160,7 +172,9 @@ TOOLS = (
         description=(
             "Use quando o cliente pergunta como pagar, sobre parcelas ou descontos. Informe product_name ou amount_brl, "
             "e installments com o número de parcelas pedido, ou 1 para pagamento à vista. method é credit por padrão, "
-            "ou pix, debit ou boleto. Devolve o preço final, o valor da parcela, a parcela mínima e se é permitido."
+            "ou pix, debit ou boleto. Devolve o preço final, o valor da parcela, a parcela mínima e se é permitido. "
+            "Se o cliente perguntar em quantas vezes pode parcelar, use installments 1 e responda com max_installments "
+            "e max_installment_brl, sem perguntar quantas parcelas ele quer."
         ),
     ),
     Tool(
@@ -172,13 +186,14 @@ TOOLS = (
         _get_order_status,
         name="get_order_status",
         description=(
-            "Use quando o cliente pergunta sobre um pedido. Em order_number, informe o número do pedido ou o código de "
-            "rastreamento (como BRAB1234567BR). Exige também o telefone e o e-mail informados pelo cliente nesta "
-            "conversa: nunca invente nem complete esses dados, peça o que faltar. Status: pending "
+            "Use quando o cliente pergunta sobre um pedido. Em tracking_code, informe o código de rastreamento que o cliente "
+            "informou: o número do pedido nunca é aceito. Exige também o telefone e o e-mail informados pelo cliente nesta "
+            "conversa: nunca invente nem complete esses três dados. Se faltar algum, não chame esta ferramenta e peça o que faltar. Status: pending "
             "(pendente), confirmed (confirmado), shipped (enviado), delivered (entregue), cancelled (cancelado). "
             "estimated_delivery é a previsão de entrega, a única data de entrega conhecida: não há data real de "
             "entrega, então nunca diga em que dia o pedido foi entregue. "
-            "days_since_estimate conta os dias desde essa previsão."
+            "days_since_estimate conta os dias desde essa previsão. returns diz quais prazos de devolução e troca ainda estão "
+            "abertos: nunca ofereça um prazo fechado. Depois do prazo de troca por defeito, a garantia é com o fabricante."
         ),
     ),
     Tool(
@@ -233,7 +248,12 @@ class StoreAgent:
         # The chat's limit can't stop a running call, so a run stops itself before the chat gives up on it.
         self._run_limit = max(reply_timeout_seconds - RUN_LIMIT_MARGIN_SECONDS, reply_timeout_seconds / 2)
         guidance = load_guidance()
-        self._agent = PydanticAgent(model, deps_type=Turn, tools=tools)
+        self._agent = PydanticAgent(
+            model,
+            deps_type=Turn,
+            tools=tools,
+            capabilities=[Hooks(before_model_request=_only_current_customer)],
+        )
 
         @self._agent.instructions
         def instructions(context: RunContext[Turn]) -> str:
@@ -271,14 +291,13 @@ class StoreAgent:
     async def _run(self, conversation_id: str, message: str) -> AgentReply:
         session = self._sessions.get(conversation_id)
         async with session.lock:
-            turn = Turn(session, conversation_id, self._db_path, self._settings, self._clock())
+            turn = Turn(session, conversation_id, self._db_path, self._settings, self._clock(), len(session.history))
             try:
                 async with asyncio.timeout(self._run_limit):
                     result = await self._agent.run(message, message_history=session.history, deps=turn)
             except (ModelAPIError, FallbackExceptionGroup) as error:
                 raise ProviderError("no model provider answered") from error
-            session.history = result.new_messages() if session.history_reset else result.all_messages()
-            session.history_reset = False
+            session.history = result.new_messages() if turn.customer_changed else result.all_messages()
             self._sessions.touch(session)
             self._store(session)
         return AgentReply(clean_answer(result.output), build_details(result.new_messages(), self._primary_model))

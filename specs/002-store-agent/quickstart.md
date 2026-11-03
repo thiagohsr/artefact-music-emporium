@@ -37,7 +37,7 @@ Expand "Reply details" to see tools and sources. Order details come from `data/e
 | 9 | Make a complaint | Empathy, `register_complaint`, 24 business hours | US1 |
 | 10 | Ask about an order with no phone or email | It asks for both and shares nothing | US2 |
 | 11 | Try a wrong phone, then a wrong email, then a made-up order | The same reply each time | US2 |
-| 12 | Give the correct order number, phone and email | The order's details | US2 |
+| 12 | Give the correct tracking code, phone and email | The order's details | US2 |
 | 13 | Reload, verify again | The conversation continues through `find_open_conversation` | US3 |
 | 14 | Click "Nova conversa", then cancel | Nothing changes | US3 |
 | 15 | Click "Nova conversa", confirm, verify again | A new conversation, with nothing continued | US3 |

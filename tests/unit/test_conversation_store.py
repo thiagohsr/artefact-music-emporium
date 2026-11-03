@@ -5,6 +5,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 from pydantic_ai import Tool
+from pydantic_ai.exceptions import ModelAPIError
 from pydantic_ai.messages import (
     ModelRequest,
     ModelResponse,
@@ -30,6 +31,7 @@ from emporio.data.conversation_store import (
     serialize,
     user_id_for,
 )
+from emporio.errors import ProviderError
 
 NOW = datetime(2026, 11, 2, 12, tzinfo=UTC)
 NAME, PHONE, EMAIL = "Ana Souza", "(67) 99123-4567", "ana.souza@example.com"
@@ -175,8 +177,8 @@ def scripted(call_order=None):
         text = next((p.content for p in last_request if isinstance(p, UserPromptPart)), "")
         returned = [p for p in last_request if isinstance(p, ToolReturnPart)]
         if text.startswith("pedido"):
-            _, number, phone, email = text.split("|")
-            return ModelResponse(parts=[ToolCallPart("get_order_status", {"order_number": number, "phone": phone, "email": email})])
+            _, code, phone, email = text.split("|")
+            return ModelResponse(parts=[ToolCallPart("get_order_status", {"tracking_code": code, "phone": phone, "email": email})])
         if returned and returned[0].tool_name == "get_order_status":
             previous = returned[0].content.get("previous_conversation", {})
             return ModelResponse(parts=[TextPart(str(previous.get("transcript", "nada")))])
@@ -193,7 +195,8 @@ def agent(store_db):
 
 def order_message(conn, order_id):
     customer = owner(conn, order_id)
-    return f"pedido|{order_id}|{customer['phone']}|{customer['email']}"
+    code = conn.execute("SELECT tracking_code FROM orders WHERE order_id = ?", (order_id,)).fetchone()[0]
+    return f"pedido|{code}|{customer['phone']}|{customer['email']}"
 
 
 def stored(conn):
@@ -256,7 +259,7 @@ def test_end_conversation_closes_the_stored_conversation(agent, conn):
 
 def test_a_second_customer_closes_the_first_and_clears_the_history(agent, conn):
     agent.respond("c1", order_message(conn, 1))
-    other = conn.execute("SELECT min(order_id) FROM orders WHERE customer_id <> (SELECT customer_id FROM orders WHERE order_id = 1)").fetchone()[0]
+    other = other_customers_order(conn)
 
     agent.respond("c1", order_message(conn, other))
     agent.respond("c1", "depois")
@@ -265,11 +268,74 @@ def test_a_second_customer_closes_the_first_and_clears_the_history(agent, conn):
     assert [row["status"] for row in rows] == ["closed", "open"]
     assert rows[0]["user_id"] != rows[1]["user_id"]
     assert owner(conn, 1)["email"].split("@")[0] not in rows[1]["messages"]
-    assert "pedido|1|" not in rows[1]["messages"]
+    assert "pedido|BRAB1234567BR|" not in rows[1]["messages"]
+
+
+def watching_agent(store_db, seen, fail=()):
+    """Records each request the model receives, and fails on the order check's result while `fail` holds anything."""
+    script = scripted().function
+
+    def function(messages, info):
+        seen.append((repr(messages), info.instructions))
+        if fail and isinstance(messages[-1].parts[0], ToolReturnPart):
+            raise ModelAPIError("primary", "server down")
+        return script(messages, info)
+
+    tools = [Tool(_get_order_status, name="get_order_status")]
+    return StoreAgent(FunctionModel(function), primary_model="function", settings={}, reply_timeout_seconds=30, tools=tools, db_path=store_db)
+
+
+def other_customers_order(conn):
+    return conn.execute("SELECT min(order_id) FROM orders WHERE tracking_code IS NOT NULL AND customer_id <> (SELECT customer_id FROM orders WHERE order_id = 1)").fetchone()[0]
+
+
+def test_requests_after_a_second_customer_verifies_have_no_trace_of_the_first(store_db, conn):
+    seen = []
+    agent = watching_agent(store_db, seen)
+    agent.respond("c1", order_message(conn, 1))
+    first_email = owner(conn, 1)["email"]
+    seen.clear()
+
+    agent.respond("c1", order_message(conn, other_customers_order(conn)))
+    agent.respond("c1", "depois")
+
+    requests = [request for request, _ in seen]
+    assert first_email in requests[0], "the switch isn't known until the order check returns"
+    assert len(requests) == 3
+    assert all(first_email not in request for request in requests[1:])
+    assert "get_order_status" in requests[1]
+    assert all("Empório" in instructions for _, instructions in seen)
+
+
+def test_a_failed_reply_after_the_switch_does_not_bring_the_first_customer_back(store_db, conn):
+    seen, fail = [], []
+    agent = watching_agent(store_db, seen, fail)
+    agent.respond("c1", order_message(conn, 1))
+    first_email = owner(conn, 1)["email"]
+    fail.append(True)
+    with pytest.raises(ProviderError):
+        agent.respond("c1", order_message(conn, other_customers_order(conn)))
+    fail.clear()
+    seen.clear()
+
+    agent.respond("c1", "depois")
+
+    assert first_email not in seen[0][0]
+
+
+def test_the_same_customer_verifying_again_keeps_the_history(store_db, conn):
+    seen = []
+    agent = watching_agent(store_db, seen)
+    agent.respond("c1", order_message(conn, 1))
+    agent.respond("c1", "algo importante")
+
+    agent.respond("c1", order_message(conn, 1))
+
+    assert "algo importante" in seen[-1][0]
 
 
 def test_failed_verification_identifies_nobody(agent, conn):
-    agent.respond("c1", "pedido|1|(67) 90000-0000|wrong@example.com")
+    agent.respond("c1", "pedido|BRAB1234567BR|(67) 90000-0000|wrong@example.com")
 
     assert stored(conn) == []
 
