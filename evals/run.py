@@ -54,6 +54,7 @@ def summarize(report) -> bool:
         for name, result in case.assertions.items():
             passed[case.source_case_name][name].append(bool(result.value))
     ok = True
+    failed = total = 0
     for case, assertions in passed.items():
         print(f"\n{case}")
         for name, results in assertions.items():
@@ -61,13 +62,17 @@ def summarize(report) -> bool:
             rate = sum(results) / len(results)
             good = rate == 1 if strict else rate >= SOFT_THRESHOLD
             ok &= good
+            failed += not good
+            total += 1
             print(f"  {'PASS' if good else 'FAIL'}  {sum(results)}/{len(results)}  {name}{'  (zero tolerance)' if strict else ''}")
     for failure in report.failures:
         ok = False
+        failed += 1
         print(f"\nFAILED RUN {failure.name}: {failure.error_message}")
     models = {case.output.model for case in report.cases}
     fallbacks = sum(case.output.fallback_used for case in report.cases)
     print(f"\nmodels: {sorted(m or '?' for m in models)}, replies from the fallback: {fallbacks}")
+    print(f"\nRESULT: {'PASSED' if ok else 'FAILED'}, {failed} of {total} checks did not meet their bar (runs per case: {RUNS})")
     return ok
 
 
