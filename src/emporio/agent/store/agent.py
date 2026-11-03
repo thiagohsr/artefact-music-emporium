@@ -184,9 +184,9 @@ TOOLS = (
         _get_order_status,
         name="get_order_status",
         description=(
-            "Use quando o cliente pergunta sobre um pedido. Em tracking_code, informe o código de rastreamento (como "
-            "BRAB1234567BR): o número do pedido nunca é aceito. Exige também o telefone e o e-mail informados pelo cliente nesta "
-            "conversa: nunca invente nem complete esses dados, peça o que faltar. Status: pending "
+            "Use quando o cliente pergunta sobre um pedido. Em tracking_code, informe o código de rastreamento que o cliente "
+            "informou: o número do pedido nunca é aceito. Exige também o telefone e o e-mail informados pelo cliente nesta "
+            "conversa: nunca invente nem complete esses três dados. Se faltar algum, não chame esta ferramenta e peça o que faltar. Status: pending "
             "(pendente), confirmed (confirmado), shipped (enviado), delivered (entregue), cancelled (cancelado). "
             "estimated_delivery é a previsão de entrega, a única data de entrega conhecida: não há data real de "
             "entrega, então nunca diga em que dia o pedido foi entregue. "
