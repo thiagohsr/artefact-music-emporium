@@ -1,175 +1,135 @@
-# Empório da Música Service Agent
+<sub>DESAFIO TÉCNICO · AI ENGINEER</sub>
 
-Text-message customer service agent prototype for Empório da Música, a fictional musical instrument
-store.
+# Empório da Música — Customer Service Agent
 
-## Getting Started
+**Thiago Ramos — AI Engineer**
 
-You need [uv](https://docs.astral.sh/uv/getting-started/installation/) and `make`.
+Repository: [github.com/thiagohsr/artefact-music-emporium](https://github.com/thiagohsr/artefact-music-emporium)<br>
+Live demo: [artefact-music-emporium.streamlit.app](https://artefact-music-emporium.streamlit.app/) · runs on Streamlit's
+free tier, so if it's asleep, give it a minute to tune its strings 🎸
 
-| Command | What it does |
-|---|---|
-| `make setup` | Creates the virtualenv and installs the locked dependencies |
-| `make run` | Starts the chat at <http://localhost:8501> |
-| `make run-dev` | Starts the chat with the troubleshooting view and crash details on |
-| `make test` | Runs the automated tests |
-| `make agent-check` | Asks the acceptance questions on the real model, and needs a provider |
-| `make evals` | Scores the return cases five times each on the real model, and needs a provider |
-| `make policy-check` | Scores policy retrieval against 16 gold questions (needs an embedding provider) |
-| `make policy-index` | Rebuilds `data/policies.sqlite` from the PDF, only needed if the PDF or model changes |
+## What I built
 
-`make run`, `make run-dev` and `make test` run the setup themselves, and the two chat commands also prepare the store
-database.
+A Python text-message agent that serves the customers of Empório da Música, a fictional instrument store, in Brazilian
+Portuguese:
 
-### Settings
+- **Persona:** the store's own tone and service rules, loaded from section 7 of its manual, in short WhatsApp-style
+  replies.
+- **Grounded answers:** prices, stock and orders come from the store data, and rules from the policy manual, never from
+  the model's memory.
+- **Data or policy:** eight typed tools. Catalog, prices, installments and orders query the data; returns, hours and
+  payment rules search the manual.
+- **Out of scope:** a closed scope with a one-sentence, friendly decline, including attempts to override the
+  instructions.
 
-Copy `.env.example` to `.env`. The agent needs a model provider, and the quickest is OpenRouter: set
-`OPENROUTER_API_KEY` and leave the rest as they are. Without a provider, the page shows an error naming `EMPORIO_AGENT`.
-
-| Setting | Values | Default | Effect |
-|---|---|---|---|
-| `EMPORIO_AGENT` | `store` or `stand_in` | `store` | The agent to use |
-| `EMPORIO_TROUBLESHOOTING` | `0` or `1` | `0` | Shows how each reply was produced |
-| `EMPORIO_REPLY_TIMEOUT_SECONDS` | Positive number | `60` | How long to wait for a reply |
-
-Settings are read once at startup, so restart the chat after changing one. An invalid value shows an
-error page naming the setting.
-
-### Connecting a real model
-
-The agent needs at least one model provider. With both configured, the self-hosted Ollama server is tried first and
-OpenRouter is the fallback.
-
-| Option | Set in `.env` | Notes |
-|---|---|---|
-| **OpenRouter** (quickest) | `OPENROUTER_API_KEY` | Create a key at [openrouter.ai](https://openrouter.ai/keys). Uses `openai/gpt-4o-mini` for chat and `qwen/qwen3-embedding-4b` for the policy search |
-| **Your own Ollama** | `OLLAMA_BASE_URL`, such as `http://localhost:11434` | Pull the models first: `ollama pull qwen3:8b && ollama pull qwen3-embedding:4b`. Both together took about 12 GB of GPU memory at a 16k context. Ollama defaults to a 4k context on GPUs under 24 GB, so raise it with `OLLAMA_CONTEXT_LENGTH` |
-| **The project's own server** | `OLLAMA_BASE_URL`, `CF_ACCESS_CLIENT_ID` and `CF_ACCESS_CLIENT_SECRET` | Not published: ask for them by replying to the selection process e-mail |
-
-| Setting | Default | Effect |
-|---|---|---|
-| `OLLAMA_CHAT_MODEL` | `qwen3:8b` | Chat model on Ollama |
-| `OLLAMA_EMBEDDING_MODEL` | `qwen3-embedding:4b` | Embedding model on Ollama |
-| `OPENROUTER_CHAT_MODEL` | `openai/gpt-4o-mini` | Chat model on OpenRouter |
-| `OPENROUTER_EMBEDDING_MODEL` | `qwen/qwen3-embedding-4b` | Embedding model on OpenRouter |
-
-- **Chat models** can change freely. The committed policy index only works with the embedding model that built it, so
-  run `make policy-index` after changing an embedding model.
-- **To use only one provider** for a run, leave the other one empty on the command line, which overrides `.env`:
-  `OLLAMA_BASE_URL= make run` for OpenRouter only, or `OPENROUTER_API_KEY= make run` for Ollama only.
-- **To see which model answered**, start with `make run-dev`: each reply shows the model, the provider and whether the
-  fallback was used.
-
-### Stand-in agent
-
-`EMPORIO_AGENT=stand_in make run-dev` uses a simulated agent that needs no model or store data, and the page says its replies
-are simulated. Start a message with one of these commands to simulate a situation:
-
-| Command | Simulates |
-|---|---|
-| `/ferramenta` | A tool call and a store data source |
-| `/politica` | A policy lookup and a policy source |
-| `/fallback` | A reply from a fallback provider |
-| `/raciocinio` | A reasoning step |
-| `/grande` | Details large enough to open the modal |
-| `/incompleto` | Incomplete details |
-| `/sem-detalhes` | No details at all |
-| `/sensivel` | A fake API key, which must never appear on the page |
-| `/erro` | The agent failing during a reply |
-| `/lento` | A reply slower than the time limit |
-
-## Technical Decisions
-
-The main choices, in one line each. [DECISIONS.md](DECISIONS.md) has the reasoning, the alternatives and the
-evidence behind them.
+## Tech decisions
 
 | Decision | Choice | Why |
 |---|---|---|
-| **Agent approach** | One Pydantic AI agent with a tool loop over eight typed tools | Choosing the right source is the core of the brief, and in a loop a wrong first call is cheap. A router with specialist agents is the next step only if evaluation shows wrong tool choices |
-| **LLM and provider** | `qwen3:8b` on a self-hosted Ollama server, with thinking on, and `gpt-4o-mini` on OpenRouter as the fallback | Runs on a 16 GB GPU, while OpenRouter is what an evaluator without the server uses. Turning thinking off made one reply state a made-up price |
-| **What must be exact lives in code** | Prices, stock, installments, return windows and the identity check are computed by the tools | Small models get dates and arithmetic wrong, so they only read the results |
-| **Retrieval** | The manual split into its 28 sections, searched by vectors (`qwen3-embedding:4b`) with keyword search as a fallback, in an index committed to the repo | The right section is in the top 3 for 16 of 16 test questions, and nobody needs an embedding provider to get the index |
-| **Prompt strategy** | Section 7 of the manual loaded as written, inside labelled sections for identity, scope, answer style, sources and orders, with example declines | The store's own tone and rules drive the agent, and the closed scope stops general-assistant answers |
-| **Conversation history** | Kept for the session, and through a page reload via a link in the address, for 30 minutes. Verified customers' conversations are also stored masked, under a random user ID | Follow-ups work, and an accidental reload doesn't lose a quote |
-| **Customer privacy** | Order details only with the tracking code, phone and email together, checked in the tool | Order IDs are sequential and easy to guess, and the model never decides who someone is |
-| **Interface** | Streamlit, calling the agent in the same process | One command to run, with the time spent on the agent and its evaluation |
+| **Agent approach** | Pydantic AI, one agent with function calling over typed tools, plus RAG over the manual | Choosing the source is the core task, and a tool loop recovers from a wrong first call. A router only if evals demand it |
+| **Model and provider** | `qwen3:8b` on self-hosted Ollama, with `gpt-4o-mini` on OpenRouter as fallback | Runs on a 16 GB GPU; OpenRouter lets anyone run it without the server |
+| **Retrieval** | The manual split into its 28 sections, vector search with `qwen3-embedding:4b` and keyword fallback | The right section is in the top 3 for 16 of 16 test questions |
+| **Prompt strategy** | Manual section 7 as written, inside labelled sections, with example declines | The store's voice drives the agent; the closed scope stops generic-assistant answers |
+| **Interface** | Streamlit chat, with a troubleshooting view of tools and sources | One command to run; time goes to the agent and its evaluation |
+| **Conversation history** | Kept per session and through a page reload; verified customers' conversations stored masked | Follow-ups work, and a reload doesn't lose a quote |
+| **Data treatment** | CSVs loaded into SQLite; the manual's contradictions resolved and documented | Exact values computed in code, assumptions on record |
 
-## Known Limitations
+> **Exact things live in code:** prices, installments, return windows and the identity check (tracking code, phone and
+> email) are computed by the tools, so the model only reads results.
 
-The main ones are below, and [DECISIONS.md](DECISIONS.md#known-limitations) lists them all.
+[DECISIONS.md](DECISIONS.md) has the reasoning, alternatives and evidence behind each choice, and the assumptions are in
+[docs/stakeholder-clarifications.md](docs/stakeholder-clarifications.md).
 
-- **Reliability varies between runs.** `make evals` shows that neither model reliably checks the return policy before
-  answering a return, and `gpt-4o-mini` denied a return that was still allowed in 3 of 5 runs.
-- **Orders without a tracking code can't be looked up.** The code is sent when an order is dispatched, so pending,
-  confirmed and cancelled orders, 12 of the 20 in the data, get pointed to the store's channels.
-- **Links and images in replies render** because replies use Markdown, and nothing filters them yet.
-- **One process, no login, no deletion on request.** The chat is meant for local use and demos, and stored conversations
-  aren't deleted when a customer asks, which manual section 9 allows.
+## Getting started
 
-## What I Would Do With More Time
+You need [uv](https://docs.astral.sh/uv/getting-started/installation/) and `make`. Copy `.env.example` to `.env` and
+connect a model, then run `make run` and open <http://localhost:8501>.
 
-- **Fix the return answers in code:** put the relevant manual sections and the open or closed windows, in plain words,
-  into the order result, so the model doesn't have to remember to look them up.
-- **Grow the evaluation suite:** move the older `make agent-check` questions and the 16 policy search questions into
-  `make evals`, add more search questions, off-topic and attack
-  cases, a judge for tone, cases kept out of prompt tuning, and a comparison with a newer or larger Qwen on the same cases.
-- **Recover a conversation from a phone and email,** for a closed tab or another device. It's designed in
-  [spec 003](specs/003-conversation-recovery/spec.md) and not built, because the page link fixed the accidental reload
-  with much less risk.
-- **Protect stored data better:** a secret-keyed hash for the user ID instead of a mapping table, deletion on request,
-  and filtering images out of replies.
-- **Cache what's safe to cache:** the static start of the prompt, and question embeddings for the policy search, but
-  never answers with prices, stock or orders.
-- **Production pieces:** a separate API in front of the agent, Postgres instead of SQLite, and test fixtures that don't
-  depend on the store's CSV rows.
+| Command | What it does |
+|---|---|
+| `make run` | Starts the chat, installing everything it needs first |
+| `make run-dev` | Starts the chat with the troubleshooting view: tools, sources and model for each reply |
+| `make test` | Runs the automated tests, with no model needed |
+| `make agent-check` | Asks the acceptance questions on the real model |
+| `make evals` | Scores the return cases five times each on the real model |
+| `make policy-check` | Scores the policy search on 16 gold questions |
+| `make policy-index` | Rebuilds the policy index, only needed if the PDF or embedding model changes |
 
-## AI Coding Assistant Usage
+### Connecting a model
 
-I used the Claude Code extension in VS Code, mostly with the Sonnet 5.5 and Opus 5.5 models at medium effort, and
-Fable 5.1 for some of the reasoning.
+With both configured, the self-hosted Ollama server is tried first and OpenRouter is the fallback.
 
-My workflow was agentic development driven by Spec Kit: each feature went through a specification, a plan and a task
-list before any code, and the code was mostly written test-first from them. The documentation lives alongside the code,
-so anyone improving a feature can start from its specification, or from
-[.specify/memory/constitution.md](.specify/memory/constitution.md) for the project's principles.
+| Option | Set in `.env` | Notes |
+|---|---|---|
+| **OpenRouter** (quickest) | `OPENROUTER_API_KEY` | Create a key at [openrouter.ai](https://openrouter.ai/keys) |
+| **Your own Ollama** | `OLLAMA_BASE_URL`, such as `http://localhost:11434` | Run `ollama pull qwen3:8b && ollama pull qwen3-embedding:4b` first. Both took about 12 GB of GPU memory at a 16k context; raise Ollama's 4k default with `OLLAMA_CONTEXT_LENGTH` |
+| **The project's server** | `OLLAMA_BASE_URL`, `CF_ACCESS_CLIENT_ID` and `CF_ACCESS_CLIENT_SECRET` | Not published: ask for them by replying to the selection process e-mail |
 
-What this gave the project:
+- **Models:** `.env.example` lists the chat and embedding model settings with their defaults. Chat models can change
+  freely; after changing an embedding model, run `make policy-index`.
+- **One provider only:** leave the other one empty on the command line, which overrides `.env`, for example
+  `OLLAMA_BASE_URL= make run` for OpenRouter only.
+- **Other settings:** `EMPORIO_TROUBLESHOOTING` (`0` or `1`) and `EMPORIO_REPLY_TIMEOUT_SECONDS` (default `60`). They're
+  read once at startup, and an invalid value shows an error page naming it.
 
-- **Tests that don't need a model:** 451 tests cover 98% of the source code, running the agent through Pydantic AI's
-  test models.
-- **Measured retrieval:** `make policy-check` scores the policy search on 16 gold questions, and the right section is in
-  the top 3 for all 16, on both providers.
-- **Measured behavior on the real models:** `make agent-check` and `make evals` repeat each case, which is how the return
-  weakness above was found rather than guessed.
+### Stand-in agent
 
-That is also why the agent can run on small, low-cost models, `qwen3:8b` locally and `gpt-4o-mini` on OpenRouter: what
-must be exact lives in tested code, and the evals show where the models still fall short.
+`EMPORIO_AGENT=stand_in make run-dev` uses a simulated agent that needs no model or store data, to test the chat itself.
+Start a message with a command to simulate a situation: `/ferramenta` (tool call), `/politica` (policy lookup),
+`/fallback`, `/raciocinio` (reasoning), `/grande` (large details), `/incompleto`, `/sem-detalhes`, `/sensivel` (a fake
+API key that must never show), `/erro` (agent failure) or `/lento` (slower than the time limit).
 
-How I kept control of the work:
+## Example conversations
 
-- **Scope before writing:** every specification started with me confirming its scope, and I removed features I hadn't
-  asked for.
-- **Correcting with evidence:** I pointed the agent's tone to section 7 of the manual, showed that a live character count
-  was possible after being told it wasn't, and required that orders be found by tracking code only.
-- **Testing it myself:** running the real app found what the tests missed, such as the fallback never being reached
-  with my server off, a reload losing a quote, and a masking bug that broke saving on the hosted app.
-- **Rules for the assistant:** one commit per subject, a secret scan before every commit, no force-pushes and no
-  attribution lines.
-
-## Example Conversations
-
-The challenge brief suggests four scenarios. Each one has a real conversation with the agent in
-[data/example-conversation](data/example-conversation), with a fifth for a request outside the store's scope. Every file
-shows the conversation first, then a collapsed section with the tools called, their results, the model's reasoning, and
-the time and tokens of each step.
+Five real conversations with the agent, in [data/example-conversation](data/example-conversation): the brief's four
+suggestions plus an out-of-scope request. Each shows the conversation first, then a collapsed section with the tools,
+results, reasoning, time and tokens.
 
 | Brief's suggestion | What it shows | Conversation |
 |---|---|---|
 | "Quais opções de violões disponíveis custando até R$1000?" | Catalog search with a price limit | [busca-no-catalogo.md](data/example-conversation/busca-no-catalogo.md) |
-| "Qual o endereço da loja?" | General store information, from the policy manual | [informacoes-da-loja.md](data/example-conversation/informacoes-da-loja.md) |
-| "Quanto custa o Takamine GD20?" | A product's price, then installments in a follow-up | [preco-e-parcelamento.md](data/example-conversation/preco-e-parcelamento.md) |
-| "Me arrependi da minha compra, posso devolver meu pedido?" | **Non-trivial:** verifies the customer by tracking code, phone and email, reads the order and applies the return policy | [devolucao-com-pedido.md](data/example-conversation/devolucao-com-pedido.md) |
+| "Qual o endereço da loja?" | Store information from the manual | [informacoes-da-loja.md](data/example-conversation/informacoes-da-loja.md) |
+| "Quanto custa o Takamine GD20?" | A price, then installments in a follow-up | [preco-e-parcelamento.md](data/example-conversation/preco-e-parcelamento.md) |
+| "Me arrependi da minha compra, posso devolver meu pedido?" | **Non-trivial:** verifies the customer by tracking code, phone and email, then applies the return policy to the order | [devolucao-com-pedido.md](data/example-conversation/devolucao-com-pedido.md) |
 | A recipe request | Declining a request outside the store's scope | [fora-do-escopo.md](data/example-conversation/fora-do-escopo.md) |
 
-To try them yourself, start the chat with `make run-dev`. The return scenario needs an order's tracking code, phone
-and email from the store data, for example `BRKR1122334BR`, `(67) 99789-0123` and `leticia.rocha@jmail.com`.
+To try the return yourself, use the tracking code `BRKR1122334BR`, phone `(67) 99789-0123` and e-mail
+`leticia.rocha@jmail.com` from the store data.
+
+## Known limitations and next steps
+
+### Limitations
+
+- **Results vary between runs:** neither model reliably checks the return policy before answering a return, and
+  `gpt-4o-mini` once denied a return that was still allowed.
+- **Orders without a tracking code yet can't be looked up:** the code is sent on dispatch, so pending, confirmed and
+  cancelled orders get pointed to the store's channels.
+- **One process, no login:** meant for local use and demos. Stored conversations aren't deleted on request yet.
+
+[DECISIONS.md](DECISIONS.md#known-limitations) lists the rest.
+
+### With more time
+
+- **Return rules delivered by the order tool itself,** so the model doesn't have to remember to look them up.
+- **A larger eval suite:** retrieval questions, off-topic and attack cases, a tone judge, and a comparison of newer or
+  larger models on the same cases.
+- **Recovery by phone and email** for a closed tab or another device, already designed in
+  [spec 003](specs/003-conversation-recovery/spec.md).
+- **Production pieces:** a separate API, Postgres, prompt caching and stronger protection of stored data.
+
+## AI coding assistant usage
+
+I used Claude Code in VS Code, mostly Sonnet 5.5 and Opus 5.5 at medium effort, and Fable 5.1 for some of the reasoning.
+
+My workflow was agentic development driven by Spec Kit: each feature went through a specification, a plan and a task
+list before any code, and the code was mostly written test-first. The specifications live alongside the code, and
+[.specify/memory/constitution.md](.specify/memory/constitution.md) gives the project's principles.
+
+- **Tests that don't need a model:** 451 tests cover 98% of the source code.
+- **Measured retrieval:** 16 of 16 gold questions find the right manual section in the top 3.
+- **Measured behavior:** repeated runs on the real models, which is how weaknesses were found rather than guessed.
+- **Human in the loop:** I confirmed the scope of every specification, corrected the assistant with evidence, and tested
+  the real app myself, which caught issues the tests missed.
+
+That is why small, low-cost models are enough: what must be exact lives in tested code, and the evals show where the
+models still fall short.
