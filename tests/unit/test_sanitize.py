@@ -104,3 +104,35 @@ def test_private_values_come_from_env_file_and_sensitive_variables(tmp_path):
 
 def test_missing_env_file_is_allowed(tmp_path):
     assert load_private_values(environ={}, env_file=tmp_path / "missing") == []
+
+
+@pytest.mark.parametrize("value", [["abcdefghijkl1234"], ("a", "b"), 12345678901, 3.14, {"nested": "x"}])
+def test_any_value_under_a_sensitive_name_is_removed(sanitizer, value):
+    assert sanitizer.clean({"api_key": value}) == {"api_key": REDACTED}
+
+
+@pytest.mark.parametrize("name", ["token", "access_token", "ACCESS_TOKEN", "auth_token", "password", "client_secret"])
+def test_sensitive_names_still_match(sanitizer, name):
+    assert sanitizer.clean({name: "x"}) == {name: REDACTED}
+
+
+@pytest.mark.parametrize("name", ["total_tokens", "input_tokens", "tokens"])
+def test_token_counts_are_kept(sanitizer, name):
+    assert sanitizer.clean({name: 42}) == {name: 42}
+
+
+@pytest.mark.parametrize("value", [None, ""])
+def test_empty_values_under_sensitive_names_stay_empty(sanitizer, value):
+    assert sanitizer.clean({"api_key": value}) == {"api_key": value}
+
+
+def test_exception_text_and_traceback_are_sanitized(sanitizer):
+    try:
+        raise ValueError(f"falhou com {PRIVATE_VALUE}")
+    except ValueError as error:
+        described = sanitizer.exception(error)
+
+    assert "Traceback" in described
+    assert "ValueError" in described
+    assert PRIVATE_VALUE not in described
+

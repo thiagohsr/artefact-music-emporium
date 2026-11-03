@@ -125,6 +125,9 @@ class StandInAgent:
         command = words[0] if words else ""
         return self._commands.get(command, _simple)(message)
 
+    def end_conversation(self, conversation_id: str) -> None:
+        pass
+
     def _slow(self, message: str) -> AgentReply:
         time.sleep(self._slow_seconds)
         return _simple(message)

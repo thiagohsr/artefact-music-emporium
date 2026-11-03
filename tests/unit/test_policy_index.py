@@ -127,7 +127,7 @@ def test_embedding_models_default_when_unset_or_blank():
 def test_configured_embedding_model_is_sent_to_the_provider(monkeypatch):
     sent = []
 
-    def fake_post(_url, payload, _headers):
+    def fake_post(_url, payload, _headers, _timeout_seconds):
         sent.append(payload["model"])
         return {"embeddings": [[1.0]]}
 
