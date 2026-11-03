@@ -8,7 +8,7 @@
 
 **Input**: User description: "Customer service agent for Empório da Música that replaces the stand-in behind the existing Agent interface. One agent with a plain tool loop and typed tools for products, order status, payment terms and policy lookup. Calculations are done in tools, not by the model. Persona and per-domain guidance in the prompt, with the store's tone. Primary model on the self-hosted server with OpenRouter as fallback. Order access requires the order number plus both the phone and the email on that order. Identified customers have persistent conversations held by system user ID with their information obfuscated; other conversations last for the session. A session ends on the new conversation button or after 30 minutes without a message. Includes the exception handling and code review improvements recorded in docs/pending-updates.md."
 
-**Amended 2026-11-03**: a page reload now keeps the conversation, through a link in the page's address. The reload scenarios below now describe opening the chat without that link, such as in a new tab.
+**Amended 2026-11-03**: a page reload now keeps the conversation, through a link in the page's address. The reload scenarios below now describe opening the chat without that link, such as in a new tab. Only the tracking code now finds an order: wherever this spec says order number, read tracking code, and an order number is never accepted.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -129,7 +129,7 @@ When the main model or a service fails, the agent uses the fallback, and a devel
 
 #### Orders
 
-- **FR-008**: Order details MUST be shared only when the order number or tracking code, phone and email all match that order's customer, checked outside the model's control.
+- **FR-008**: Order details MUST be shared only when the tracking code, phone and email all match that order's customer, checked outside the model's control.
 - **FR-009**: A failed check MUST NOT reveal whether the order or the customer exists.
 
 #### Conversations

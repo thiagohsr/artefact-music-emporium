@@ -6,7 +6,7 @@ from typing import Any
 
 NOT_VERIFIED = {
     "verified": False,
-    "message": "Não foi possível confirmar esses dados. Confira o número do pedido, o telefone e o e-mail.",
+    "message": "Não foi possível confirmar esses dados. Confira o código de rastreamento, o telefone e o e-mail.",
 }
 
 
@@ -28,20 +28,23 @@ def _days_since(estimate: str | None, today: date) -> int | None:
 
 def get_order_status(
     conn: sqlite3.Connection,
-    order_number: str,
+    tracking_code: str,
     phone: str,
     email: str,
     today: date,
 ) -> tuple[dict[str, Any], VerifiedCustomer | None]:
-    """Starts from the order, because two customers share an email and an email alone identifies nobody."""
-    reference = re.sub(r"[\s#.-]", "", order_number).upper()
+    """Starts from the order, because two customers share an email and an email alone identifies nobody.
+
+    Only the tracking code finds an order: order IDs are sequential, so they're easy to guess.
+    """
+    code = re.sub(r"[\s#.-]", "", tracking_code).upper()
     order = conn.execute(
         """
         SELECT o.*, c.name, c.phone, c.email
         FROM orders o JOIN customers c USING (customer_id)
-        WHERE upper(o.tracking_code) = ? OR CAST(o.order_id AS TEXT) = ?
+        WHERE upper(o.tracking_code) = ?
         """,
-        (reference, reference),
+        (code,),
     ).fetchone()
     if (
         order is None
@@ -57,7 +60,6 @@ def get_order_status(
     result = {
         "verified": True,
         "customer_name": order["name"],
-        "order_number": order["order_id"],
         "status": order["status"],
         "total_brl": order["total_brl"],
         "payment_method": order["payment_method"],

@@ -27,6 +27,7 @@ Lookups, payment math, the identity check and writes are plain Python, so they'r
 
 - `installments` is required, because the model omitted it.
 - A successful order check includes the open conversation, because `qwen3:8b` called that tool in only 1 of 5 runs.
+- Orders are found only by tracking code, because order IDs are sequential and easy to guess. Phone and email are required as well.
 
 ### Model and provider
 
@@ -114,6 +115,7 @@ Keyword search is only the fallback: it misses "Me arrependi da minha compra".
 
 | Limitation | Detail |
 |---|---|
+| **Orders with no tracking code** | Only the tracking code finds an order, and it's sent when the order is dispatched. So the agent can't look up pending, confirmed or cancelled orders, which is 12 of the 20 in the data, and points those customers to the store's channels |
 | **Return periods** | They count from the delivery estimate, because the data has no actual delivery date |
 | **Business hours** | They don't cover holidays, because the manual doesn't list them |
 | **Complaints** | They're recorded, but the store's team has no screen to read them |
@@ -143,6 +145,6 @@ Keyword search is only the fallback: it misses "Me arrependi da minha compra".
 
 **The problem it solves:** a customer who closes the tab, or moves to another device, loses a conversation that never passed the order check.
 
-**The design:** the agent asks for a phone and email when someone asks for a quote, and those same details recover the conversation for 30 minutes. Phone and email aren't secret, so they open only conversations that never passed the order check, and order details always need the order reference, phone and email.
+**The design:** the agent asks for a phone and email when someone asks for a quote, and those same details recover the conversation for 30 minutes. Phone and email aren't secret, so they open only conversations that never passed the order check, and order details always need the tracking code, phone and email.
 
 **Why it isn't built:** the page link fixes the accident that started this, with much less risk. Contact details add a new identity type and changes around the order check, which is the code that protects customer data.

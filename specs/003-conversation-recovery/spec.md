@@ -33,7 +33,7 @@ A customer working on a large quote gives their phone and email when the agent a
 
 ### User Story 2 - Contact details stay limited (Priority: P1)
 
-Phone and email aren't secret, so they recover only a conversation that never passed the order check. Order details always need the order number or tracking code, the phone and the email.
+Phone and email aren't secret, so they recover only a conversation that never passed the order check. Order details always need the tracking code, the phone and the email.
 
 **Why this priority**: Without this limit, anyone who knows a customer's phone and email could read their order details, which breaks the privacy principle.
 
@@ -43,7 +43,7 @@ Phone and email aren't secret, so they recover only a conversation that never pa
 
 1. **Given** a stored conversation, **When** someone gives a different phone or email, **Then** nothing is recovered.
 2. **Given** a stored conversation, **When** someone gives only the phone or only the email, **Then** nothing is recovered, and the agent asks for what is missing.
-3. **Given** a customer identified by contact details, **When** they ask about an order, **Then** the agent still requires the order number or tracking code, the phone and the email.
+3. **Given** a customer identified by contact details, **When** they ask about an order, **Then** the agent still requires the tracking code, the phone and the email.
 4. **Given** a conversation that passed the order check, **When** someone gives only its phone and email, **Then** that conversation is not recovered.
 5. **Given** a stored conversation older than 30 minutes since its last message, **When** the customer gives the same phone and email, **Then** nothing is recovered.
 
@@ -97,7 +97,7 @@ The agent only says it saved or noted something when a tool actually did it. Whe
 - **FR-003**: Once the customer gives a phone and email, the conversation MUST be stored from that moment, including the session's earlier messages, held under a system identity for those details with their personal information obfuscated.
 - **FR-004**: Conversations with neither contact details nor a passed order check MUST NOT be stored.
 - **FR-005**: The same phone and email MUST recover the last open conversation stored under them, and only if the last message is within 30 minutes. Both values are required.
-- **FR-006**: Contact details MUST NOT give access to order details. The order check MUST always require the order number or tracking code, the phone and the email, and being identified by contact details MUST NOT count toward it.
+- **FR-006**: Contact details MUST NOT give access to order details. The order check MUST always require the tracking code, the phone and the email, and being identified by contact details MUST NOT count toward it.
 - **FR-007**: Contact details MUST NOT recover a conversation that has passed the order check, from the moment it passes.
 - **FR-008**: When an order check passes for the person already identified on the conversation, the same session MUST continue with its earlier messages, and the conversation MUST then be recoverable only by the order check.
 - **FR-009**: When an order check passes for a different person, or different contact details are given during an identified conversation, the conversation MUST close and the two MUST NOT mix.

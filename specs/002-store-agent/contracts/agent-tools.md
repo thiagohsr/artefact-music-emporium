@@ -9,7 +9,7 @@ result, and expected outcomes are data, not exceptions.
 | `get_product` | `name` | One product with specs and promotion, a list of close matches, or not found |
 | `payment_terms` | `installments` (required), `product_name` or `amount_brl`, and `method` (`credit` by default) | See below |
 | `policy_lookup` | `question` | Up to 3 customer sections: number, title, text |
-| `get_order_status` | `order_number`, `phone`, `email` | The order, or one fixed "not verified" result |
+| `get_order_status` | `tracking_code`, `phone`, `email` | The order, or one fixed "not verified" result |
 | `find_open_conversation` | None | The masked transcript, or none |
 | `register_complaint` | `summary` | Recorded, and the 24 business hours return time |
 | `finish_conversation` | None | Closed |
@@ -39,7 +39,7 @@ Returns the final price, the installment value, the minimum that applies, `allow
 ## get_order_status
 
 - All three values are required by the tool's signature, so the model must ask for what's missing.
-- `order_number` accepts the order number or the tracking code, ignoring case and separators.
+- `tracking_code` is the only way to find an order, ignoring case and separators. An order ID is never accepted, so an order with no code yet can't be looked up.
 - The order is looked up first, then the phone (digits only) and email (ignoring case) are compared with that order's
   customer. Any failure gives the same result, including an order that doesn't exist.
 - On success it returns status, stored total, payment method, items, tracking code, delivery estimate and

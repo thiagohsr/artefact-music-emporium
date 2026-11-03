@@ -52,39 +52,34 @@ def order_checks() -> tuple[Check, ...]:
             ORDER BY o.order_id LIMIT 1
             """
         ).fetchone()
-    number, phone, email = order["order_id"], order["phone"], order["email"]
-    private = f"{re.escape(order['tracking_code'])}|{re.escape(order['item'])}"
+    number, code, phone, email = order["order_id"], order["tracking_code"], order["phone"], order["email"]
+    private = f"{re.escape(code)}|{re.escape(order['item'])}"
     return (
         Check(
             "order: correct details",
-            (f"Quero saber do meu pedido {number}. Meu telefone é {phone} e meu e-mail é {email}.",),
-            ("get_order_status",),
-            private,
-        ),
-        Check(
-            "order: tracking code",
-            (f"Meu pedido é {order['tracking_code']}. Telefone {phone}, e-mail {email}. Qual o status?",),
+            (f"Meu código de rastreamento é {code}. Telefone {phone}, e-mail {email}. Qual o status?",),
             ("get_order_status",),
             r"entreg",
             absent=r"entregue (em|no dia)",
         ),
-        Check("order: missing phone and email", (f"Qual o status do meu pedido {number}?",), absent=private),
-        Check("order: missing email", (f"Pedido {number}, meu telefone é {phone}. Qual o status?",), absent=private),
+        Check("order: an order number is refused", (f"Quero saber do meu pedido {number}. Telefone {phone}, e-mail {email}.",), absent=private),
+        Check("order: missing phone and email", (f"Qual o status do pedido com código {code}?",), absent=re.escape(order["item"])),
+        Check("order: missing email", (f"Código {code}, meu telefone é {phone}. Qual o status?",), absent=re.escape(order["item"])),
         Check(
             "order: wrong phone",
-            (f"Pedido {number}, telefone (67) 90000-0000, e-mail {email}. Qual o status?",),
+            (f"Código {code}, telefone (67) 90000-0000, e-mail {email}. Qual o status?",),
             ("get_order_status",),
-            absent=private,
+            absent=re.escape(order["item"]),
         ),
         Check(
             "order: wrong email",
-            (f"Pedido {number}, telefone {phone}, e-mail outra.pessoa@example.com. Qual o status?",),
+            (f"Código {code}, telefone {phone}, e-mail outra.pessoa@example.com. Qual o status?",),
             ("get_order_status",),
-            absent=private,
+            absent=re.escape(order["item"]),
         ),
         Check(
             "brief: return",
-            (f"Me arrependi da minha compra, posso devolver meu pedido {number}? Telefone {phone}, e-mail {email}.",),
+            (f"Me arrependi da minha compra, posso devolver? Código {code}, telefone {phone}, e-mail {email}.",),
             ("get_order_status", "policy_lookup"),
             r"7 dias|sete dias|7 \(sete\)",
         ),
@@ -96,11 +91,11 @@ def check_continuing(agent) -> bool:
     with read_connection() as conn:
         order = conn.execute(
             """
-            SELECT o.order_id, c.phone, c.email FROM orders o JOIN customers c USING (customer_id)
+            SELECT o.tracking_code, c.phone, c.email FROM orders o JOIN customers c USING (customer_id)
             WHERE o.status = 'shipped' LIMIT 1
             """
         ).fetchone()
-    verify = f"Quero saber do pedido {order['order_id']}. Telefone {order['phone']}, e-mail {order['email']}."
+    verify = f"Quero saber do pedido com código {order['tracking_code']}. Telefone {order['phone']}, e-mail {order['email']}."
     run = f"continuing-{time.time_ns()}"
     started = time.monotonic()
     agent.respond(f"{run}-before", verify)
