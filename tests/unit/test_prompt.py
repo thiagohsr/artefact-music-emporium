@@ -81,3 +81,8 @@ def test_the_scope_is_closed_and_accessories_are_never_offered(instructions):
     assert "Todo o resto está fora do atendimento" in instructions
     assert "Nunca os ofereça" in instructions
 
+
+def test_replies_are_short_and_keep_tool_fields_out(instructions):
+    assert "Escreva como numa mensagem de WhatsApp" in instructions
+    assert "cite a parcela mínima só quando um parcelamento for recusado" in instructions
+
