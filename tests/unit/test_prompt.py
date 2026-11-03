@@ -91,3 +91,7 @@ def test_playing_and_tuning_advice_is_out_of_scope(instructions):
     assert "dicas de como tocar, afinar ou consertar um instrumento" in instructions
     assert "Dúvidas práticas" not in instructions
 
+
+def test_a_closed_store_never_postpones_a_lookup(instructions):
+    assert "nunca deixe uma consulta para quando a loja abrir" in instructions
+
