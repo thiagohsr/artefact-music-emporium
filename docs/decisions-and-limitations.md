@@ -37,8 +37,9 @@ in [Stakeholder Clarifications](stakeholder-clarifications.md). Issues in the st
   are plain dataclasses with a generic list of steps, so they don't tie the chat to an agent framework.
 - **Stand-in agent:** it tests the chat and its failure paths with no model or store data. It's never used silently: the
   page shows a notice, and an agent that fails to start shows an error instead of falling back to it.
-- **Plain text only:** messages and replies are rendered with `st.text`, so text from customers or tools can't change
-  the page. This gives up lists and emphasis in replies.
+- **Markdown for replies, plain text for customers:** replies use `st.markdown`, because the models write lists and bold
+  that are hard to read as plain text. `$` is escaped so that prices aren't read as math. Customer messages stay in `st.text`, so
+  what a customer types can't change the page.
 - **Secrets removed in one place:** replies and details pass through the sanitizer as soon as the agent
   returns, before anything is stored, so no view can skip it. With troubleshooting off, details are
   discarded and never stored.
@@ -63,7 +64,8 @@ in [Stakeholder Clarifications](stakeholder-clarifications.md). Issues in the st
   the order date as the delivery date. No order was shared with wrong or missing details in any run. These are small samples.
 - **Guardrails are incomplete:** requests beyond accessories that are off-topic, and attempts to override the instructions,
   aren't handled yet. An earlier draft agent failed such a test, and this one hasn't been hardened against it.
-- **Model text in the chat:** the models write Markdown, and plain-text rendering shows it literally, as `**asterisks**`.
+- **Markdown in replies:** links and images in a reply render, and HTML doesn't. A model led into writing an image link would make
+  the browser request that address. This hasn't been tested, and nothing filters it.
 - **Stored conversations:** masking can miss unusual formats and other people's names. The user ID is pseudonymous, because a
   table in the same file maps it to the customer. Nothing deletes stored conversations, although manual section 9 lets
   customers ask for that. A different customer verifying in the middle of a session closes the first conversation and clears

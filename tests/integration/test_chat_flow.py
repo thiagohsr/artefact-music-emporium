@@ -48,6 +48,13 @@ def test_page_is_in_portuguese_with_an_empty_conversation(open_app):
     assert "Digite" in app.chat_input[0].placeholder
 
 
+def test_replies_keep_dollar_signs_out_of_math_and_customer_text_stays_plain(open_app, recording_agent):
+    app = send(open_app(), "R$100 e **R$200**")
+
+    assert app.chat_message[0].text[0].value == "R$100 e **R$200**"
+    assert app.chat_message[1].markdown[0].value == r"Resposta para R\$100 e **R\$200**"
+
+
 def test_twenty_message_conversation_stays_in_order_with_one_identifier(open_app, recording_agent):
     app = open_app()
 
@@ -57,7 +64,8 @@ def test_twenty_message_conversation_stays_in_order_with_one_identifier(open_app
     expected = []
     for number in range(20):
         expected += [f"Mensagem {number}", f"Resposta para Mensagem {number}"]
-    assert [element.value for element in app.text] == expected
+    shown = [(message.text if message.name == "user" else message.markdown)[0].value for message in app.chat_message]
+    assert shown == expected
     assert len({conversation_id for conversation_id, _ in recording_agent.calls}) == 1
     assert app.chat_input[0].disabled is False
 

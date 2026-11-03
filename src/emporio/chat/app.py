@@ -70,7 +70,7 @@ def render_turns(conversation: Conversation, *, troubleshooting: bool) -> None:
             st.text(turn.message)
         if turn.outcome is not None:
             with st.chat_message("assistant"):
-                st.text(turn.answer)
+                st.markdown(turn.answer.replace("$", r"\$"))
                 if troubleshooting:
                     render_details(turn, index)
 
