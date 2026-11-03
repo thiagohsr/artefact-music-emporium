@@ -123,6 +123,9 @@ def run_check(agent, index: int, check: Check) -> bool:
     except Exception as error:  # noqa: BLE001 - a failure in one check must not hide the others
         print(f"FAIL {check.name}: {type(error).__name__}, {time.monotonic() - started:.1f}s")
         return False
+    finally:
+        # A verified check leaves a stored conversation open, and the next run would continue from its answers.
+        agent.end_conversation(f"check-{index}")
     elapsed = time.monotonic() - started
     problems = [f"missing tool {tool}" for tool in check.tools if tool not in called]
     if check.no_tools and called:
