@@ -69,3 +69,9 @@ def test_business_hours(moment, is_open):
 )
 def test_closed_status_says_when_the_store_reopens(moment, reopens):
     assert reopens in store_status(moment)
+
+
+def test_a_return_always_checks_the_rules_and_offers_only_what_they_allow(instructions):
+    assert "mesmo que uma conversa anterior já fale disso" in instructions
+    assert "ofereça só o que as regras trazem" in instructions
+
