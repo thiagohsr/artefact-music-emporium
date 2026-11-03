@@ -110,7 +110,8 @@ The main ones are below, and [DECISIONS.md](DECISIONS.md#known-limitations) list
 
 - **Fix the return answers in code:** put the relevant manual sections and the open or closed windows, in plain words,
   into the order result, so the model doesn't have to remember to look them up.
-- **Grow the evaluation suite:** move the older `make agent-check` questions into `make evals`, add off-topic and attack
+- **Grow the evaluation suite:** move the older `make agent-check` questions and the 16 policy search questions into
+  `make evals`, add more search questions, off-topic and attack
   cases, a judge for tone, cases kept out of prompt tuning, and a comparison with a newer or larger Qwen on the same cases.
 - **Recover a conversation from a phone and email,** for a closed tab or another device. It's designed in
   [spec 003](specs/003-conversation-recovery/spec.md) and not built, because the page link fixed the accidental reload
@@ -127,11 +128,22 @@ The main ones are below, and [DECISIONS.md](DECISIONS.md#known-limitations) list
 I used the Claude Code extension in VS Code, mostly with the Sonnet 5.5 and Opus 5.5 models at medium effort, and
 Fable 5.1 for some of the reasoning.
 
-My workflow focused on agentic development through Spec Kit specifications, aiming to deliver most features with
-quality despite the low-cost models the agent runs on: `qwen3:8b` locally and `gpt-4o-mini` on OpenRouter. It feels
-like a way to deliver features through documentation that lives alongside the code. That makes it easier for anyone
-who wants to improve a feature to meet its BDD specifications, or to get a quick overview of the project's purpose
-through [.specify/memory/constitution.md](.specify/memory/constitution.md).
+My workflow was agentic development driven by Spec Kit: each feature went through a specification, a plan and a task
+list before any code, and the code was mostly written test-first from them. The documentation lives alongside the code,
+so anyone improving a feature can start from its specification, or from
+[.specify/memory/constitution.md](.specify/memory/constitution.md) for the project's principles.
+
+What this gave the project:
+
+- **Tests that don't need a model:** 451 tests cover 98% of the source code, running the agent through Pydantic AI's
+  test models.
+- **Measured retrieval:** `make policy-check` scores the policy search on 16 gold questions, and the right section is in
+  the top 3 for all 16, on both providers.
+- **Measured behavior on the real models:** `make agent-check` and `make evals` repeat each case, which is how the return
+  weakness above was found rather than guessed.
+
+That is also why the agent can run on small, low-cost models, `qwen3:8b` locally and `gpt-4o-mini` on OpenRouter: what
+must be exact lives in tested code, and the evals show where the models still fall short.
 
 How I kept control of the work:
 
