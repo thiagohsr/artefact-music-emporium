@@ -62,7 +62,7 @@ OpenRouter is the fallback.
 
 ### Stand-in agent
 
-`EMPORIO_AGENT=stand_in make run` uses a simulated agent that needs no model or store data, and the page says its replies
+`EMPORIO_AGENT=stand_in make run-dev` uses a simulated agent that needs no model or store data, and the page says its replies
 are simulated. Start a message with one of these commands to simulate a situation:
 
 | Command | Simulates |
